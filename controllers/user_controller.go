@@ -1,75 +1,53 @@
 package controllers
 
 import (
-	"context"
-	"encoding/json"
 	"net/http"
+	"snake_api/config"
+	"snake_api/models"
+	"time"
 
-	"github.com/BT2701/snake/config"
-	"github.com/BT2701/snake/models"
-	"github.com/BT2701/snake/utils"
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/crypto/bcrypt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// RegisterHandler xử lý đăng ký tài khoản
-func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func CreateUser(c *gin.Context) {
 	var user models.User
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+
+	// Bind JSON body to struct
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Hash mật khẩu
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		http.Error(w, "Error hashing password", http.StatusInternalServerError)
-		return
-	}
-	user.Password = string(hashedPassword)
+	user.ID = primitive.NewObjectID().Hex()
+	user.CreatedAt = time.Now()
 
-	// Lưu user vào MongoDB
-	_, err = config.UserCollection.InsertOne(context.Background(), user)
+	collection := config.GetCollection("users")
+	_, err := collection.InsertOne(c, user)
 	if err != nil {
-		http.Error(w, "Error saving user", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "User created", "user": user})
 }
 
-// LoginHandler xử lý đăng nhập
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+func GetUsers(c *gin.Context) {
+	collection := config.GetCollection("users")
+
+	cursor, err := collection.Find(c, bson.M{})
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		return
+	}
+	defer cursor.Close(c)
+
+	var users []models.User
+	if err = cursor.All(c, &users); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error reading data"})
 		return
 	}
 
-	// Tìm user trong MongoDB
-	var foundUser models.User
-	err = config.UserCollection.FindOne(context.Background(), bson.M{"username": user.Username}).Decode(&foundUser)
-	if err != nil {
-		http.Error(w, "User not found", http.StatusUnauthorized)
-		return
-	}
-
-	// So sánh mật khẩu
-	err = bcrypt.CompareHashAndPassword([]byte(foundUser.Password), []byte(user.Password))
-	if err != nil {
-		http.Error(w, "Invalid password", http.StatusUnauthorized)
-		return
-	}
-
-	// Tạo JWT token
-	token, err := utils.GenerateJWT(user.Username)
-	if err != nil {
-		http.Error(w, "Error creating token", http.StatusInternalServerError)
-		return
-	}
-
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	c.JSON(http.StatusOK, users)
 }

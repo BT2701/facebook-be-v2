@@ -1,35 +1,35 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/http"
 	"os"
+	"snake_api/config"
+	"snake_api/routes"
 
-	"github.com/BT2701/snake/config"
-	"github.com/BT2701/snake/routes"
-	"github.com/BT2701/snake/utils"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Load biến môi trường
+	// Load environment variables
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	// Gán JWT Secret
-	utils.JWTSecret = []byte(os.Getenv("JWT_SECRET"))
-
-	// Kết nối MongoDB
+	// Connect to MongoDB
 	config.ConnectDB()
 
-	// Khởi tạo routes
-	routes.RegisterRoutes()
+	// Set up router
+	router := routes.SetupRouter()
+	routes.HealthRoutes(router)
+	routes.AuthRoutes(router)
 
-	// Khởi chạy server
+
+	// Start server
 	port := os.Getenv("PORT")
-	fmt.Printf("Server running on port %s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Printf("Server running on port %s", port)
+	err = router.Run(":" + port)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
