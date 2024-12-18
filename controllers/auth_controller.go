@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var userCollection *mongo.Collection
@@ -47,4 +48,37 @@ func Login(c *gin.Context) {
 		"message": "Login successful",
 		"token":   token,
 	})
+}
+
+func SignUp (c *gin.Context) {
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	// Check if user exists
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	count, _ := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
+	if count > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
+		return
+	}
+
+	user.ID = primitive.NewObjectID().Hex()
+	user.CreatedAt = time.Now()
+
+	_, err := userCollection.InsertOne(ctx, user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User created", "user": user})
+}
+
+func ForgotPassword(c *gin.Context) {
+	
 }

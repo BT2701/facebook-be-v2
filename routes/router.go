@@ -8,9 +8,14 @@ import (
 )
 
 func SetupRouter() *gin.Engine {
+	
 	r := gin.Default()
 
 	// Enable CORS
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Next()
+	})
 	r.Use(utils.CorsMiddleware())
 
 	// Routes
@@ -18,6 +23,9 @@ func SetupRouter() *gin.Engine {
 	{
 		api.GET("/users", controllers.GetUsers)
 		api.POST("/users", controllers.CreateUser)
+		api.POST("/login", controllers.Login)
+		api.GET("/health", controllers.HealthCheck)
+		api.POST("/register", controllers.SignUp)
 	}
 
 	return r
