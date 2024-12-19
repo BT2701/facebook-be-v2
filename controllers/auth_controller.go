@@ -3,82 +3,87 @@ package controllers
 import (
 	"context"
 	"snake_api/models"
-	"snake_api/utils"
+	"snake_api/services"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"snake_api/utils"
 )
 
-var userCollection *mongo.Collection
-
-func InitUserController(collection *mongo.Collection) {
-	userCollection = collection
+type UserController struct {
+	service services.UserService
 }
 
-func Login(c *gin.Context) {
+func NewUserController(service services.UserService) *UserController {
+	return &UserController{service: service}
+}
+
+func (ctrl *UserController) Login(c *gin.Context) {
 	var input models.User
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	// Check if user exists
-	var user models.User
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	err := userCollection.FindOne(ctx, bson.M{"email": input.Email, "password": input.Password}).Decode(&user)
+	token, err := ctrl.service.Login(context.Background(), input.Email, input.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error(), "notification": utils.GetErrorMessage()})
 		return
 	}
 
-	// Generate JWT Token
-	token, err := utils.GenerateToken(user.Email)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Login successful",
-		"token":   token,
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "token": token, "notification": utils.GetSuccessMessage()})
 }
 
-func SignUp (c *gin.Context) {
+func (ctrl *UserController) SignUp(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	// Check if user exists
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	count, _ := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
-	if count > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
-		return
-	}
-
-	user.ID = primitive.NewObjectID().Hex()
-	user.CreatedAt = time.Now()
-
-	_, err := userCollection.InsertOne(ctx, user)
+	err := ctrl.service.SignUp(context.Background(), user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User created", "user": user})
 }
 
-func ForgotPassword(c *gin.Context) {
-	
+func (ctrl *UserController) ForgotPassword(c *gin.Context) {
+	var input struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email"})
+		return
+	}
+
+	_, err := ctrl.service.ForgotPassword(context.Background(), input.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password reset email sent successfully"})
+}
+
+func (ctrl *UserController) ResetPassword(c *gin.Context) {
+	var input struct {
+		Token    string `json:"token" binding:"required"`
+		Password string `json:"password" binding:"required,min=6"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	err := ctrl.service.ResetPassword(context.Background(), input.Token, input.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
 }

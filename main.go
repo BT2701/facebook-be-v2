@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"snake_api/config"
-	"snake_api/controllers"
 	"snake_api/routes"
 	"github.com/joho/godotenv"
 )
@@ -18,11 +17,12 @@ func main() {
 
 	// Connect to MongoDB
 	config.ConnectDB()
-	controllers.InitUserController(config.DB.Collection("users"))
 
+	// Get the user collection from the connected DB
+	userCollection := config.GetCollection("users")
 
-	// Set up router
-	router := routes.SetupRouter()
+	// Set up router and pass the collection to SetupRouter
+	router := routes.SetupRouter(userCollection)
 
 	// Start server
 	port := os.Getenv("PORT")
