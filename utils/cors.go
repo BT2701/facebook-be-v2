@@ -2,16 +2,18 @@ package utils
 
 import (
 	"github.com/rs/cors"
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 )
 
-func CorsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		cors.New(cors.Options{
-			AllowedOrigins: []string{"*"},
-			AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
-			AllowedHeaders: []string{"Origin", "Content-Type"},
-		}).HandlerFunc(c.Writer, c.Request)
-		c.Next()
+func CorsMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			cors.New(cors.Options{
+				AllowedOrigins: []string{"*"},
+				AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+				AllowedHeaders: []string{"Origin", "Content-Type"},
+			}).HandlerFunc(c.Response().Writer, c.Request())
+			return next(c)
+		}
 	}
 }

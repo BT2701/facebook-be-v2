@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"context"
-	"snake_api/models"
-	"snake_api/services"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"snake_api/utils"
+	"snake_api/models"
+	"snake_api/services"
+	// "snake_api/utils"
+
+	"github.com/labstack/echo/v4"
 )
 
 type UserController struct {
@@ -18,72 +19,90 @@ func NewUserController(service services.UserService) *UserController {
 	return &UserController{service: service}
 }
 
-func (ctrl *UserController) Login(c *gin.Context) {
+// Chuẩn hóa phản hồi
+type APIResponse struct {
+	Status int         `json:"status"`
+	Data   interface{} `json:"data"`
+	Error  interface{} `json:"error"`
+}
+
+func newAPIResponse(status int, data interface{}, err interface{}) *APIResponse {
+	return &APIResponse{
+		Status: status,
+		Data:   data,
+		Error:  err,
+	}
+}
+
+func (ctrl *UserController) Login(c echo.Context) error {
 	var input models.User
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
-		return
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
 	}
 
 	token, err := ctrl.service.Login(context.Background(), input.Email, input.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error(), "notification": utils.GetErrorMessage()})
-		return
+		return c.JSON(http.StatusUnauthorized, newAPIResponse(http.StatusUnauthorized, nil, err.Error()))
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "token": token, "notification": utils.GetSuccessMessage()})
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Login successful",
+		"token":   token,
+	}, nil))
 }
 
-func (ctrl *UserController) SignUp(c *gin.Context) {
+func (ctrl *UserController) SignUp(c echo.Context) error {
 	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
-		return
+	if err := c.Bind(&user); err != nil {
+		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
 	}
 
 	err := ctrl.service.SignUp(context.Background(), user)
 	if err != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-		return
+		return c.JSON(http.StatusConflict, newAPIResponse(http.StatusConflict, nil, err.Error()))
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User created", "user": user})
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "User created",
+		"user":    user,
+	}, nil))
 }
 
-func (ctrl *UserController) ForgotPassword(c *gin.Context) {
+func (ctrl *UserController) ForgotPassword(c echo.Context) error {
 	var input struct {
-		Email string `json:"email" binding:"required,email"`
+		Email string `json:"email" validate:"required,email"`
 	}
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email"})
-		return
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid email"))
 	}
 
-	_, err := ctrl.service.ForgotPassword(context.Background(), input.Email)
+	resetToken, err := ctrl.service.ForgotPassword(context.Background(), input.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Password reset email sent successfully"})
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+		"message":      "Password reset email sent successfully",
+		"reset_token":  resetToken, // Optional: Include reset token for testing purposes
+	}, nil))
 }
 
-func (ctrl *UserController) ResetPassword(c *gin.Context) {
+func (ctrl *UserController) ResetPassword(c echo.Context) error {
 	var input struct {
-		Token    string `json:"token" binding:"required"`
-		Password string `json:"password" binding:"required,min=6"`
+		Token    string `json:"token" validate:"required"`
+		Password string `json:"password" validate:"required,min=6"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
-		return
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
 	}
 
 	err := ctrl.service.ResetPassword(context.Background(), input.Token, input.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Password reset successfully",
+	}, nil))
 }

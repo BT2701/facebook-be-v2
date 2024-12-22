@@ -5,27 +5,33 @@ import (
 	"snake_api/repositories"
 	"snake_api/services"
 	"snake_api/utils"
+	"github.com/go-redis/redis/v8"
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
-	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(userCollection *mongo.Collection) *gin.Engine {
+func SetupRouter(userCollection *mongo.Collection) *echo.Echo {
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379", // Địa chỉ Redis
+	})
 	// Khởi tạo repository, service, và controller
 	userRepo := repositories.NewUserRepository(userCollection)
-	userService := services.NewUserService(userRepo)
+	userService := services.NewUserService(userRepo, redisClient)
 	userController := controllers.NewUserController(userService)
 
-	r := gin.Default()
+	e := echo.New()
 
 	// Enable CORS
-	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Next()
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Response().Header().Set("Access-Control-Allow-Origin", "*")
+			return next(c)
+		}
 	})
-	r.Use(utils.CorsMiddleware())
+	e.Use(utils.CorsMiddleware())
 
 	// Routes
-	api := r.Group("/api")
+	api := e.Group("/api")
 	{
 		api.POST("/login", userController.Login)
 		api.POST("/register", userController.SignUp)
@@ -33,5 +39,5 @@ func SetupRouter(userCollection *mongo.Collection) *gin.Engine {
 		api.POST("/reset", userController.ResetPassword)
 	}
 
-	return r
+	return e
 }

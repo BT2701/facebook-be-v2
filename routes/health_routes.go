@@ -3,9 +3,9 @@ package routes
 import (
 	"snake_api/controllers"
 
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 )
 
-func HealthRoutes(router *gin.Engine) {
-	router.GET("/health", controllers.HealthCheck)
+func HealthRoutes(e *echo.Echo) {
+	e.GET("/health", controllers.HealthCheck)
 }

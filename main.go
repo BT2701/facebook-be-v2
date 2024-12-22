@@ -27,7 +27,7 @@ func main() {
 	// Start server
 	port := os.Getenv("PORT")
 	log.Printf("Server running on port %s", port)
-	err = router.Run(":" + port)
+	err = router.Start(":" + port)
 	if err != nil {
 		log.Fatal(err)
 	}
