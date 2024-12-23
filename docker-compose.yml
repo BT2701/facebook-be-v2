@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/userdb
+      - REDIS_URI=redis:6379
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./notification-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/notificationdb
+      - REDIS_URI=redis:6379
+
+  # MongoDB
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  # Redis
+  redis:
+    image: redis:7.2
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  # Kong API Gateway
+  kong:
+    image: kong:3.3
+    container_name: kong
+    depends_on:
+      - kong-migrations
+      - user-service
+      - notification-service
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/app/kong.yml
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+    ports:
+      - "8000:8000" # Gateway public port
+      - "8001:8001" # Admin port
+    volumes:
+      - ./api-gateway/kong.yml:/app/kong.yml
+      - ./api-gateway/kong.conf:/etc/kong/kong.conf
+
+  # Kong Migrations (one-time task to set up Kong database)
+  kong-migrations:
+    image: kong:3.3
+    command: kong migrations bootstrap
+    environment:
+      - KONG_DATABASE=off
+
+volumes:
+  mongodb_data:

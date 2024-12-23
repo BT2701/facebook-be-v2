@@ -1,0 +1,15 @@
+_format_version: "3.0"
+services:
+  - name: user-service
+    url: http://user-service:8080
+    routes:
+      - name: user-route
+        paths:
+          - /user
+
+  - name: notification-service
+    url: http://notification-service:8081
+    routes:
+      - name: notification-route
+        paths:
+          - /notification

@@ -6,6 +6,7 @@ import (
 
 	"snake_api/models"
 	"snake_api/services"
+
 	// "snake_api/utils"
 
 	"github.com/labstack/echo/v4"
@@ -82,8 +83,8 @@ func (ctrl *UserController) ForgotPassword(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
-		"message":      "Password reset email sent successfully",
-		"reset_token":  resetToken, // Optional: Include reset token for testing purposes
+		"message":     "Password reset email sent successfully",
+		"reset_token": resetToken, // Optional: Include reset token for testing purposes
 	}, nil))
 }
 
@@ -105,4 +106,13 @@ func (ctrl *UserController) ResetPassword(c echo.Context) error {
 	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
 		"message": "Password reset successfully",
 	}, nil))
+}
+
+func (ctrl *UserController) GetAllUsers(c echo.Context) error {
+	users, err := ctrl.service.GetAllUsers(context.Background())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, users, nil))
 }
