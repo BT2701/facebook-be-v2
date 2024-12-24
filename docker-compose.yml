@@ -27,6 +27,19 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/notificationdb
       - REDIS_URI=redis:6379
 
+  # Chat Service
+  chat-service:
+    build:
+      context: ./chat-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/chatdb
+      - REDIS_URI=redis:6379
+
   # MongoDB
   mongodb:
     image: mongo:6.0

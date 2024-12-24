@@ -11,10 +11,14 @@ import (
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/golang-jwt/jwt/v5"
+	"os"
 )
 
+var jwtKey = []byte(os.Getenv("JWT_SECRET"))
+
 type UserService interface {
-	Login(ctx context.Context, email, password string) (string, error)
+	Login(ctx context.Context, email, password string) (string, error, *models.User)
 	SignUp(ctx context.Context, user models.User) error
 	ForgotPassword(ctx context.Context, email string) (string, error)
 	ResetPassword(ctx context.Context, token, newPassword string) error
@@ -30,38 +34,47 @@ func NewUserService(repo repositories.UserRepository, redisClient *redis.Client)
 	return &userServiceImpl{repo: repo, redisClient: redisClient}
 }
 
-func (s *userServiceImpl) Login(ctx context.Context, email, password string) (string, error) {
-	// Kiểm tra token đã tồn tại trong Redis
-	existingToken, err := s.redisClient.Get(ctx, "user:"+email).Result()
-	if err == nil && existingToken != "" {
-		return existingToken, nil // Trả về token cũ
-	}
-
+func (s *userServiceImpl) Login(ctx context.Context, email, password string) (string, error, *models.User) {
 	// Lấy thông tin người dùng từ MongoDB
 	user, err := s.repo.FindUserByEmail(ctx, email)
 	if err != nil {
-		return "", errors.New("invalid credentials")
+		return "", errors.New("invalid credentials"), nil
+	}
+
+	// Kiểm tra token đã tồn tại trong Redis
+	existingToken, err := s.redisClient.Get(ctx, "user:"+email).Result()
+	if err == nil && existingToken != "" {
+		// Giải mã token để kiểm tra thời hạn
+		claims := &utils.Claims{}
+		_, err := jwt.ParseWithClaims(existingToken, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+
+		if err == nil && claims.ExpiresAt.After(time.Now()) {
+			// Nếu token hợp lệ và còn hạn, trả về token cũ
+			return existingToken, nil, user
+		}
 	}
 
 	// Xác thực mật khẩu
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return "", errors.New("invalid credentials")
+		return "", errors.New("invalid credentials"), nil
 	}
 
 	// Tạo token mới
 	token, err := utils.GenerateToken(user.Email)
 	if err != nil {
-		return "", errors.New("failed to generate token")
+		return "", errors.New("failed to generate token"), nil
 	}
 
 	// Lưu token vào Redis với TTL (e.g., 24 giờ)
 	err = s.redisClient.Set(ctx, "user:"+email, token, 24*time.Hour).Err()
 	if err != nil {
-		return "", errors.New("failed to save token in Redis")
+		return "", errors.New("failed to save token in Redis"), nil
 	}
 
-	return token, nil
+	return token, nil, user
 }
 
 func (s *userServiceImpl) SignUp(ctx context.Context, user models.User) error {

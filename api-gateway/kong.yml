@@ -13,3 +13,28 @@ services:
       - name: notification-route
         paths:
           - /notification
+
+  - name: chat-service
+    url: http://chat-service:8082
+    routes:
+      - name: chat-route
+        paths:
+          - /chat
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "http://localhost:3000"
+      methods:
+        - GET
+        - HEAD
+        - PUT
+        - PATCH
+        - POST
+        - DELETE
+      headers:
+        - Content-Type
+        - Authorization
+      credentials: true
+      max_age: 3600

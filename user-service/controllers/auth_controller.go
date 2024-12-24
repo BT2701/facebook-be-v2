@@ -36,21 +36,25 @@ func newAPIResponse(status int, data interface{}, err interface{}) *APIResponse 
 }
 
 func (ctrl *UserController) Login(c echo.Context) error {
-	var input models.User
-	if err := c.Bind(&input); err != nil {
-		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
-	}
+    var input models.User
+    if err := c.Bind(&input); err != nil {
+        return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
+    }
 
-	token, err := ctrl.service.Login(context.Background(), input.Email, input.Password)
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, newAPIResponse(http.StatusUnauthorized, nil, err.Error()))
-	}
+    // Gọi hàm service để login
+    token, err, user := ctrl.service.Login(context.Background(), input.Email, input.Password)
+    if err != nil {
+        return c.JSON(http.StatusUnauthorized, newAPIResponse(http.StatusUnauthorized, nil, err.Error()))
+    }
 
-	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
-		"message": "Login successful",
-		"token":   token,
-	}, nil))
+    // Trả về phản hồi khi login thành công
+    return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+        "message": "Login successful",
+        "token":   token,
+        "user":    user, // Bao gồm thông tin user (nếu cần)
+    }, nil))
 }
+
 
 func (ctrl *UserController) SignUp(c echo.Context) error {
 	var user models.User
