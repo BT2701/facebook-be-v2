@@ -1,15 +1,17 @@
 package main
 
 import (
-    "log"
-    "chat-service/internal/adapters/in"
-    "chat-service/internal/adapters/out"
-    "chat-service/internal/app/service"
-    "chat-service/pkg/database"
-    "github.com/labstack/echo/v4"
-    "github.com/labstack/echo/v4/middleware"
+	"chat-service/internal/adapters/in"
+	"chat-service/internal/adapters/out"
+	"chat-service/internal/app/service"
+	"chat-service/pkg/database"
+	"chat-service/pkg/utils"
+	"log"
 	"os"
-    "github.com/joho/godotenv"
+
+	"github.com/joho/godotenv"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -24,8 +26,9 @@ func main() {
     messageRepo := out.NewMongoMessageRepository()
     chatService := service.NewChatService(*messageRepo)
 
-    // Create HTTP handler
+    // Create handlers
     chatHandler := in.ChatHandler{Service: chatService}
+    socketHandler := in.NewSocketHandler(chatService)
 
     // Set up Echo
     e := echo.New()
@@ -33,13 +36,23 @@ func main() {
     // Middleware
     e.Use(middleware.Logger())
     e.Use(middleware.Recover())
+    e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Response().Header().Set("Access-Control-Allow-Origin", "*")
+			return next(c)
+		}
+	})
+    e.Use(utils.CorsMiddleware())
 
-    // Routes
+    // HTTP Routes
     api := e.Group("/api")
     api.POST("/messages", chatHandler.SendMessage)
     api.GET("/messages", chatHandler.GetMessages)
     api.GET("/messages/all", chatHandler.GetAllMessages)
     api.DELETE("/messages/all", chatHandler.DeleteAllMessages)
+
+    // WebSocket Route
+    api.GET("/ws", socketHandler.HandleConnection)
 
     // Start the server
     if err := e.Start(":" + os.Getenv("PORT")); err != nil {
