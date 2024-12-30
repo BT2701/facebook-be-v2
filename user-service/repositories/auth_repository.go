@@ -16,6 +16,8 @@ type UserRepository interface {
 	UpdateUserPassword(ctx context.Context, email, password string) error
 	FindAllUsers(ctx context.Context) ([]models.User, error)
 	DeleteAllUsers(ctx context.Context) error
+	Logout(ctx context.Context, email string) error
+	EditUser(ctx context.Context, email string, user models.User) error
 }
 
 type userRepositoryImpl struct {
@@ -54,7 +56,6 @@ func (r *userRepositoryImpl) FindAllUsers(ctx context.Context) ([]models.User, e
 	return users, nil // Trả về danh sách người dùng
 }
 
-
 func (r *userRepositoryImpl) FindUserByEmailAndPassword(ctx context.Context, email, password string) (*models.User, error) {
 	var user models.User
 	err := r.collection.FindOne(ctx, bson.M{"email": email, "password": password}).Decode(&user)
@@ -83,5 +84,14 @@ func (r *userRepositoryImpl) UpdateUserPassword(ctx context.Context, email, pass
 
 func (r *userRepositoryImpl) DeleteAllUsers(ctx context.Context) error {
 	_, err := r.collection.DeleteMany(ctx, bson.M{})
+	return err
+}
+func (r *userRepositoryImpl) Logout(ctx context.Context, email string) error {
+	_, err := r.collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"is_online": 0}, "$currentDate": bson.M{"last_active": true}})
+	return err
+}
+func (r *userRepositoryImpl) EditUser(ctx context.Context, email string, user models.User) error {
+	_, err := r.collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"name": user.Name, "description": user.Description, "avatar": user.Avatar, "birthday": user.Birthday,
+		"address": user.Address, "social": user.Social, "education": user.Education, "relationship": user.Relationship, "phone": user.Phone}})
 	return err
 }

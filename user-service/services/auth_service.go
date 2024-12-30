@@ -24,6 +24,8 @@ type UserService interface {
 	ResetPassword(ctx context.Context, token, newPassword string) error
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 	DeleteAllUsers(ctx context.Context) error
+	Logout(ctx context.Context, email string) error
+	EditUser(ctx context.Context, email string, user models.User) error
 }
 
 type userServiceImpl struct {
@@ -79,6 +81,7 @@ func (s *userServiceImpl) Login(ctx context.Context, email, password string) (st
 }
 
 func (s *userServiceImpl) SignUp(ctx context.Context, user models.User) error {
+
 	// Kiểm tra email đã tồn tại
 	count, _ := s.repo.CountUsersByEmail(ctx, user.Email)
 	if count > 0 {
@@ -144,4 +147,12 @@ func (s *userServiceImpl) GetAllUsers(ctx context.Context) ([]models.User, error
 
 func (s *userServiceImpl) DeleteAllUsers(ctx context.Context) error {
 	return s.repo.DeleteAllUsers(ctx)
+}
+
+func (s *userServiceImpl) Logout(ctx context.Context, email string) error {
+	return s.repo.Logout(ctx, email)
+}
+
+func (s *userServiceImpl) EditUser(ctx context.Context, email string, user models.User) error {
+	return s.repo.EditUser(ctx, email, user)
 }

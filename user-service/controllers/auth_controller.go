@@ -131,3 +131,40 @@ func (ctrl *UserController) DeleteAllUsers(c echo.Context) error {
 		"message": "All users deleted",
 	}, nil))
 }
+
+func (ctrl *UserController) Logout(c echo.Context) error {
+	var input struct {
+		Email string `json:"email" validate:"required,email"`
+	}
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid email"))
+	}
+
+	err := ctrl.service.Logout(context.Background(), input.Email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Logged out successfully",
+	}, nil))
+}
+
+func (ctrl *UserController) EditUser(c echo.Context) error {
+	var input struct {
+		Email string `json:"email" validate:"required,email"`
+		User  models.User
+	}
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
+	}
+
+	err := ctrl.service.EditUser(context.Background(), input.Email, input.User)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "User updated",
+	}, nil))
+}

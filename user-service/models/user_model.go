@@ -10,7 +10,7 @@ type User struct {
 	Password     string    `bson:"password" json:"password"`
 	Description  string    `bson:"description" json:"description"`
 	Avatar       string    `bson:"avatar" json:"avatar"`
-	Birthday     time.Time `bson:"birthday" json:"birthday"`
+	Birthday     string    `bson:"birthday" json:"birthday"`
 	Gender       string    `bson:"gender" json:"gender"`
 	Phone        string    `bson:"phone" json:"phone"`
 	Is_online    int       `bson:"is_online" json:"is_online"`
