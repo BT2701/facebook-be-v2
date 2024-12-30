@@ -15,6 +15,7 @@ type UserRepository interface {
 	InsertUser(ctx context.Context, user models.User) error
 	UpdateUserPassword(ctx context.Context, email, password string) error
 	FindAllUsers(ctx context.Context) ([]models.User, error)
+	DeleteAllUsers(ctx context.Context) error
 }
 
 type userRepositoryImpl struct {
@@ -77,5 +78,10 @@ func (r *userRepositoryImpl) InsertUser(ctx context.Context, user models.User) e
 
 func (r *userRepositoryImpl) UpdateUserPassword(ctx context.Context, email, password string) error {
 	_, err := r.collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"password": password}})
+	return err
+}
+
+func (r *userRepositoryImpl) DeleteAllUsers(ctx context.Context) error {
+	_, err := r.collection.DeleteMany(ctx, bson.M{})
 	return err
 }

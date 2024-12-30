@@ -40,6 +40,7 @@ func SetupRouter(userCollection *mongo.Collection) *echo.Echo {
 		api.POST("/forgot", userController.ForgotPassword)
 		api.POST("/reset", userController.ResetPassword)
 		api.GET("/users", userController.GetAllUsers)
+		api.DELETE("/users", userController.DeleteAllUsers)
 	}
 
 	return e

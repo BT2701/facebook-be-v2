@@ -23,6 +23,7 @@ type UserService interface {
 	ForgotPassword(ctx context.Context, email string) (string, error)
 	ResetPassword(ctx context.Context, token, newPassword string) error
 	GetAllUsers(ctx context.Context) ([]models.User, error)
+	DeleteAllUsers(ctx context.Context) error
 }
 
 type userServiceImpl struct {
@@ -139,4 +140,8 @@ func (s *userServiceImpl) ResetPassword(ctx context.Context, token, newPassword 
 }
 func (s *userServiceImpl) GetAllUsers(ctx context.Context) ([]models.User, error) {
 	return s.repo.FindAllUsers(ctx)
+}
+
+func (s *userServiceImpl) DeleteAllUsers(ctx context.Context) error {
+	return s.repo.DeleteAllUsers(ctx)
 }

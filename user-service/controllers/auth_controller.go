@@ -120,3 +120,14 @@ func (ctrl *UserController) GetAllUsers(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, users, nil))
 }
+
+func (ctrl *UserController) DeleteAllUsers(c echo.Context) error {
+	err := ctrl.service.DeleteAllUsers(context.Background())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "All users deleted",
+	}, nil))
+}
