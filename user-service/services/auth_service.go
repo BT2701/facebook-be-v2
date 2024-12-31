@@ -26,6 +26,8 @@ type UserService interface {
 	DeleteAllUsers(ctx context.Context) error
 	Logout(ctx context.Context, email string) error
 	EditUser(ctx context.Context, email string, user models.User) error
+	GetByID(ctx context.Context, id string) (*models.User, error)
+	FindUserByEmail(ctx context.Context, email string) (*models.User, error)
 }
 
 type userServiceImpl struct {
@@ -155,4 +157,15 @@ func (s *userServiceImpl) Logout(ctx context.Context, email string) error {
 
 func (s *userServiceImpl) EditUser(ctx context.Context, email string, user models.User) error {
 	return s.repo.EditUser(ctx, email, user)
+}
+
+func (s *userServiceImpl) GetByID(ctx context.Context, id string) (*models.User, error) {
+    user, err := s.repo.GetUserByID(ctx, id)
+    if err != nil {
+        return nil, err
+    }
+    return user, nil
+}
+func (s *userServiceImpl) FindUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return s.repo.FindUserByEmail(ctx, email)
 }

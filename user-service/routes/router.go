@@ -42,6 +42,9 @@ func SetupRouter(userCollection *mongo.Collection) *echo.Echo {
 		api.GET("/users", userController.GetAllUsers)
 		api.DELETE("/users", userController.DeleteAllUsers)
 		api.PUT("/logout", userController.Logout)
+		api.PUT("/edit", userController.EditUser)
+		api.GET("/user/:id", userController.GetByID)
+		api.GET("/user", userController.FindUserByEmail)
 	}
 
 	return e

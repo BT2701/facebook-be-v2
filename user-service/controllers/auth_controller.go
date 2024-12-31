@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"snake_api/models"
@@ -167,4 +168,42 @@ func (ctrl *UserController) EditUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
 		"message": "User updated",
 	}, nil))
+}
+
+func (ctrl *UserController) GetByID(c echo.Context) error {
+	id := c.Param("id") // Lấy id từ query string
+	fmt.Println("Received ID:", id)
+
+	user, err := ctrl.service.GetByID(context.Background(), id)
+	if err != nil {
+		// Trả lỗi 404 nếu không tìm thấy user
+		if err.Error() == "mongo: no documents in result" {
+			fmt.Println("User not found for ID:", id)
+			return c.JSON(http.StatusNotFound, newAPIResponse(http.StatusNotFound, nil, "User not found"))
+		}
+		// Trả lỗi 400 nếu id không hợp lệ
+		if err.Error() == "id không hợp lệ" {
+			fmt.Println("Invalid ID:", id)
+			return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid ID"))
+		}
+		fmt.Println("Error retrieving user by ID:", err)
+		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	fmt.Println("User found:", user)
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, user, nil))
+}
+func (ctrl *UserController) FindUserByEmail(c echo.Context) error {
+    email := c.QueryParam("email")
+    if email == "" {
+        return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Email is required"))
+    }
+
+	fmt.Println("email: ",email)
+    user, err := ctrl.service.FindUserByEmail(context.Background(), email)
+    if err != nil {
+        return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+    }
+
+    return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, user, nil))
 }

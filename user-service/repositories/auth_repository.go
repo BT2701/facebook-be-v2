@@ -6,6 +6,9 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	// "go.mongodb.org/mongo-driver/bson/primitive"
+	"errors"
+	"fmt"
 )
 
 type UserRepository interface {
@@ -18,6 +21,7 @@ type UserRepository interface {
 	DeleteAllUsers(ctx context.Context) error
 	Logout(ctx context.Context, email string) error
 	EditUser(ctx context.Context, email string, user models.User) error
+    GetUserByID(ctx context.Context, id string) (*models.User, error)
 }
 
 type userRepositoryImpl struct {
@@ -91,7 +95,25 @@ func (r *userRepositoryImpl) Logout(ctx context.Context, email string) error {
 	return err
 }
 func (r *userRepositoryImpl) EditUser(ctx context.Context, email string, user models.User) error {
-	_, err := r.collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"name": user.Name, "description": user.Description, "avatar": user.Avatar, "birthday": user.Birthday,
-		"address": user.Address, "social": user.Social, "education": user.Education, "relationship": user.Relationship, "phone": user.Phone}})
+	_, err := r.collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"name": user.Name, "description": user.Description, "birthday": user.Birthday,
+		"address": user.Address, "social": user.Social, "education": user.Education, "relationship": user.Relationship, "phone": user.Phone, "gender": user.Gender, "email": user.Email}})
 	return err
+}
+func (r *userRepositoryImpl) GetUserByID(ctx context.Context, id string) (*models.User, error) {
+    fmt.Println("Received ID:", id)
+
+    var user models.User
+    filter := bson.M{"_id": id} // Không chuyển sang ObjectID
+    err := r.collection.FindOne(ctx, filter).Decode(&user)
+    if err != nil {
+        if errors.Is(err, mongo.ErrNoDocuments) {
+            fmt.Println("No user found for ID:", id)
+            return nil, errors.New("user not found")
+        }
+        fmt.Println("Error querying database:", err)
+        return nil, err
+    }
+
+    fmt.Println("User found:", user)
+    return &user, nil
 }
