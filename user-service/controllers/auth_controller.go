@@ -207,3 +207,22 @@ func (ctrl *UserController) FindUserByEmail(c echo.Context) error {
 
     return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, user, nil))
 }
+
+func (ctrl *UserController) UpdateAvatar(c echo.Context) error {
+	var input struct {
+		Email  string `json:"email" validate:"required,email"`
+		Avatar string `json:"avatar" validate:"required"`
+	}
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
+	}
+
+	err := ctrl.service.UpdateAvatar(context.Background(), input.Email, input.Avatar)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Avatar updated",
+	}, nil))
+}

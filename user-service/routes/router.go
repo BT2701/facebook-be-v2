@@ -45,6 +45,7 @@ func SetupRouter(userCollection *mongo.Collection) *echo.Echo {
 		api.PUT("/edit", userController.EditUser)
 		api.GET("/user/:id", userController.GetByID)
 		api.GET("/user", userController.FindUserByEmail)
+		api.PUT("/avatar", userController.UpdateAvatar)
 	}
 
 	return e

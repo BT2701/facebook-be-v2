@@ -40,6 +40,19 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/chatdb
       - REDIS_URI=redis:6379
 
+  # Media Service
+  media-service:
+    build:
+      context: ./media-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/mediadb
+      - REDIS_URI=redis:6379
+
   # MongoDB
   mongodb:
     image: mongo:6.0

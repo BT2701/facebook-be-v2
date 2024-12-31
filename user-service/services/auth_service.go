@@ -28,6 +28,7 @@ type UserService interface {
 	EditUser(ctx context.Context, email string, user models.User) error
 	GetByID(ctx context.Context, id string) (*models.User, error)
 	FindUserByEmail(ctx context.Context, email string) (*models.User, error)
+	UpdateAvatar(ctx context.Context, email, avatar string) error
 }
 
 type userServiceImpl struct {
@@ -168,4 +169,8 @@ func (s *userServiceImpl) GetByID(ctx context.Context, id string) (*models.User,
 }
 func (s *userServiceImpl) FindUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	return s.repo.FindUserByEmail(ctx, email)
+}
+
+func (s *userServiceImpl) UpdateAvatar(ctx context.Context, email, avatar string) error {
+	return s.repo.UpdateAvatar(ctx, email, avatar)
 }

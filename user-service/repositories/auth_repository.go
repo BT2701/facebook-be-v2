@@ -22,6 +22,7 @@ type UserRepository interface {
 	Logout(ctx context.Context, email string) error
 	EditUser(ctx context.Context, email string, user models.User) error
     GetUserByID(ctx context.Context, id string) (*models.User, error)
+	UpdateAvatar(ctx context.Context, email, avatar string) error
 }
 
 type userRepositoryImpl struct {
@@ -116,4 +117,9 @@ func (r *userRepositoryImpl) GetUserByID(ctx context.Context, id string) (*model
 
     fmt.Println("User found:", user)
     return &user, nil
+}
+
+func (r *userRepositoryImpl) UpdateAvatar(ctx context.Context, email, avatar string) error {
+	_, err := r.collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"avatar": avatar}})
+	return err
 }

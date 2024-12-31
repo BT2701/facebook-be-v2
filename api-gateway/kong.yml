@@ -21,6 +21,13 @@ services:
         paths:
           - /chat
 
+  - name: media-service
+    url: http://media-service:8083
+    routes:
+      - name: media-route
+        paths:
+          - /media
+
 plugins:
   - name: cors
     config:
