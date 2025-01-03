@@ -1,11 +1,12 @@
 package inbound
 
 import (
-	"encoding/json"
 	"net/http"
 	"post-service/internal/model"
 	"post-service/internal/app/service"
-	"github.com/gorilla/mux"
+
+	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PostHandler struct {
@@ -16,71 +17,61 @@ func NewPostHandler(postService service.PostService) *PostHandler {
 	return &PostHandler{postService: postService}
 }
 
-func (handler *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
+func (handler *PostHandler) CreatePost(c echo.Context) error {
 	var post model.Post
-	err := json.NewDecoder(r.Body).Decode(&post)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if err := c.Bind(&post); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
-	err = handler.postService.CreatePost(&post)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := handler.postService.CreatePost(&post); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return c.NoContent(http.StatusCreated)
 }
 
-func (handler *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (handler *PostHandler) GetPost(c echo.Context) error {
+	id := c.Param("id")
 
 	post, err := handler.postService.GetPost(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
 	if post == nil {
-		http.Error(w, "Post not found", http.StatusNotFound)
-		return
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Post not found"})
 	}
 
-	json.NewEncoder(w).Encode(post)
+	return c.JSON(http.StatusOK, post)
 }
 
-func (handler *PostHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (handler *PostHandler) UpdatePost(c echo.Context) error {
+	id := c.Param("id")
 
 	var post model.Post
-	err := json.NewDecoder(r.Body).Decode(&post)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if err := c.Bind(&post); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
-	post.ID = id
-	err = handler.postService.UpdatePost(&post)
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid ID format"})
+	}
+	post.ID = objectID
+
+	if err := handler.postService.UpdatePost(&post); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return c.NoContent(http.StatusOK)
 }
 
-func (handler *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (handler *PostHandler) DeletePost(c echo.Context) error {
+	id := c.Param("id")
 
-	err := handler.postService.DeletePost(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := handler.postService.DeletePost(id); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return c.NoContent(http.StatusOK)
 }

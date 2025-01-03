@@ -1,11 +1,12 @@
 package inbound
 
 import (
-	"encoding/json"
 	"net/http"
 	"post-service/internal/app/service"
 	"post-service/internal/model"
-	"github.com/gorilla/mux"
+
+	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ReactionHandler struct {
@@ -16,72 +17,75 @@ func NewReactionHandler(reactionService service.ReactionService) *ReactionHandle
 	return &ReactionHandler{reactionService: reactionService}
 }
 
-func (handler *ReactionHandler) CreateReaction(w http.ResponseWriter, r *http.Request) {
+// CreateReaction handles creating a new reaction
+func (handler *ReactionHandler) CreateReaction(c echo.Context) error {
 	var reaction model.Reaction
-	err := json.NewDecoder(r.Body).Decode(&reaction)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if err := c.Bind(&reaction); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid JSON payload"})
 	}
 
-	err = handler.reactionService.CreateReaction(&reaction)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := handler.reactionService.CreateReaction(&reaction); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return c.JSON(http.StatusCreated, map[string]string{"message": "Reaction created successfully"})
 }
 
-func (handler *ReactionHandler) GetReaction(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+// GetReaction handles retrieving a reaction by ID
+func (handler *ReactionHandler) GetReaction(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing reaction ID"})
+	}
 
 	reaction, err := handler.reactionService.GetReaction(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
 	if reaction == nil {
-		http.Error(w, "Reaction not found", http.StatusNotFound)
-		return
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Reaction not found"})
 	}
 
-	json.NewEncoder(w).Encode(reaction)
+	return c.JSON(http.StatusOK, reaction)
 }
 
-func (handler *ReactionHandler) UpdateReaction(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+// UpdateReaction handles updating an existing reaction
+func (handler *ReactionHandler) UpdateReaction(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing reaction ID"})
+	}
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid reaction ID format"})
+	}
 
 	var reaction model.Reaction
-	err := json.NewDecoder(r.Body).Decode(&reaction)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if err := c.Bind(&reaction); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid JSON payload"})
 	}
 
-	reaction.ID = id
+	reaction.ID = objectID
 
-	err = handler.reactionService.UpdateReaction(&reaction)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := handler.reactionService.UpdateReaction(&reaction); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return c.JSON(http.StatusOK, map[string]string{"message": "Reaction updated successfully"})
 }
 
-func (handler *ReactionHandler) DeleteReaction(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	err := handler.reactionService.DeleteReaction(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+// DeleteReaction handles deleting a reaction by ID
+func (handler *ReactionHandler) DeleteReaction(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing reaction ID"})
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if err := handler.reactionService.DeleteReaction(id); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Reaction deleted successfully"})
 }

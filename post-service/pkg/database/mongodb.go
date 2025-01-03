@@ -26,3 +26,7 @@ func InitMongoDB() *mongo.Client {
     MongoClient = client
     return MongoClient
 }
+
+func GetCollection(databaseName, collectionName string) *mongo.Collection {
+    return MongoClient.Database(databaseName).Collection(collectionName)
+}

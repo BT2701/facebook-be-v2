@@ -1,10 +1,12 @@
 package inbound
 
 import (
-	"encoding/json"
 	"net/http"
 	"post-service/internal/app/service"
 	"post-service/internal/model"
+
+	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type CommentHandler struct {
@@ -15,97 +17,74 @@ func NewCommentHandler(commentService service.CommentService) *CommentHandler {
 	return &CommentHandler{commentService: commentService}
 }
 
-// Helper function to write JSON response
-func writeJSONResponse(w http.ResponseWriter, statusCode int, payload interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	if payload != nil {
-		json.NewEncoder(w).Encode(payload)
-	}
-}
-
-// Helper function to write JSON error response
-func writeJSONError(w http.ResponseWriter, statusCode int, message string) {
-	writeJSONResponse(w, statusCode, map[string]string{"error": message})
-}
-
-func (handler *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
+// CreateComment handles the creation of a new comment
+func (handler *CommentHandler) CreateComment(c echo.Context) error {
 	var comment model.Comment
-	err := json.NewDecoder(r.Body).Decode(&comment)
-	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Invalid JSON payload")
-		return
+	if err := c.Bind(&comment); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid JSON payload"})
 	}
 
-	err = handler.commentService.CreateComment(&comment)
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
-		return
+	if err := handler.commentService.CreateComment(&comment); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	writeJSONResponse(w, http.StatusCreated, map[string]string{"message": "Comment created successfully"})
+	return c.JSON(http.StatusCreated, map[string]string{"message": "Comment created successfully"})
 }
 
-func (handler *CommentHandler) GetComment(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+// GetComment retrieves a comment by its ID
+func (handler *CommentHandler) GetComment(c echo.Context) error {
+	id := c.Param("id")
 	if id == "" {
-		writeJSONError(w, http.StatusBadRequest, "Missing comment ID")
-		return
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing comment ID"})
 	}
 
 	comment, err := handler.commentService.GetComment(id)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
-		return
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
 	if comment == nil {
-		writeJSONError(w, http.StatusNotFound, "Comment not found")
-		return
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Comment not found"})
 	}
 
-	writeJSONResponse(w, http.StatusOK, comment)
+	return c.JSON(http.StatusOK, comment)
 }
 
-func (handler *CommentHandler) UpdateComment(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+// UpdateComment updates an existing comment
+func (handler *CommentHandler) UpdateComment(c echo.Context) error {
+	id := c.Param("id")
 	if id == "" {
-		writeJSONError(w, http.StatusBadRequest, "Missing comment ID")
-		return
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing comment ID"})
 	}
 
 	var comment model.Comment
-	err := json.NewDecoder(r.Body).Decode(&comment)
-	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Invalid JSON payload")
-		return
+	if err := c.Bind(&comment); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid JSON payload"})
 	}
 
-	comment.ID = id // Đảm bảo ID trong request là ID cần cập nhật
-	err = handler.commentService.UpdateComment(&comment)
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
-		return
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid comment ID"})
 	}
 
-	writeJSONResponse(w, http.StatusOK, map[string]string{"message": "Comment updated successfully"})
+	comment.ID = objectID // Đảm bảo ID trong request là ID cần cập nhật
+	if err := handler.commentService.UpdateComment(&comment); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Comment updated successfully"})
 }
 
-func (handler *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+// DeleteComment deletes a comment by its ID
+func (handler *CommentHandler) DeleteComment(c echo.Context) error {
+	id := c.Param("id")
 	if id == "" {
-		writeJSONError(w, http.StatusBadRequest, "Missing comment ID")
-		return
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing comment ID"})
 	}
 
-	err := handler.commentService.DeleteComment(id)
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
-		return
+	if err := handler.commentService.DeleteComment(id); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	writeJSONResponse(w, http.StatusOK, map[string]string{"message": "Comment deleted successfully"})
+	return c.JSON(http.StatusOK, map[string]string{"message": "Comment deleted successfully"})
 }

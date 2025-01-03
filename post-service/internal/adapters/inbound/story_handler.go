@@ -1,11 +1,12 @@
 package inbound
 
 import (
-	"encoding/json"
 	"net/http"
 	"post-service/internal/app/service"
 	"post-service/internal/model"
-	"github.com/gorilla/mux"
+
+	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type StoryHandler struct {
@@ -16,71 +17,75 @@ func NewStoryHandler(storyService service.StoryService) *StoryHandler {
 	return &StoryHandler{storyService: storyService}
 }
 
-func (handler *StoryHandler) CreateStory(w http.ResponseWriter, r *http.Request) {
+// CreateStory handles creating a new story
+func (handler *StoryHandler) CreateStory(c echo.Context) error {
 	var story model.Story
-	err := json.NewDecoder(r.Body).Decode(&story)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if err := c.Bind(&story); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid JSON payload"})
 	}
 
-	err = handler.storyService.CreateStory(&story)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := handler.storyService.CreateStory(&story); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return c.JSON(http.StatusCreated, map[string]string{"message": "Story created successfully"})
 }
 
-func (handler *StoryHandler) GetStory(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+// GetStory handles retrieving a story by ID
+func (handler *StoryHandler) GetStory(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing story ID"})
+	}
 
 	story, err := handler.storyService.GetStory(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
 	if story == nil {
-		http.Error(w, "Story not found", http.StatusNotFound)
-		return
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Story not found"})
 	}
 
-	json.NewEncoder(w).Encode(story)
+	return c.JSON(http.StatusOK, story)
 }
 
-func (handler *StoryHandler) UpdateStory(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+// UpdateStory handles updating an existing story
+func (handler *StoryHandler) UpdateStory(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing story ID"})
+	}
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid story ID format"})
+	}
 
 	var story model.Story
-	err := json.NewDecoder(r.Body).Decode(&story)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if err := c.Bind(&story); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid JSON payload"})
 	}
 
-	story.ID = id
-	err = handler.storyService.UpdateStory(&story)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	story.ID = objectID
+
+	if err := handler.storyService.UpdateStory(&story); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return c.JSON(http.StatusOK, map[string]string{"message": "Story updated successfully"})
 }
 
-func (handler *StoryHandler) DeleteStory(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	err := handler.storyService.DeleteStory(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+// DeleteStory handles deleting a story by ID
+func (handler *StoryHandler) DeleteStory(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing story ID"})
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if err := handler.storyService.DeleteStory(id); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Story deleted successfully"})
 }
