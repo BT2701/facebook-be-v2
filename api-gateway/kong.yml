@@ -28,6 +28,13 @@ services:
         paths:
           - /media
 
+  - name: post-service
+    url: http://post-service:8084
+    routes:
+      - name: post-route
+        paths:
+          - /post
+
 plugins:
   - name: cors
     config:

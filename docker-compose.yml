@@ -53,6 +53,19 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/mediadb
       - REDIS_URI=redis:6379
 
+  # Post Service
+  post-service:
+    build:
+      context: ./post-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/postdb
+      - REDIS_URI=redis:6379
+
   # MongoDB
   mongodb:
     image: mongo:6.0
