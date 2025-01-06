@@ -20,6 +20,7 @@ func NewPostHandler(postService service.PostService) *PostHandler {
 
 func (handler *PostHandler) CreatePost(c echo.Context) error {
 	var post model.Post
+	post.ID = primitive.NewObjectID()
 	if err := c.Bind(&post); err != nil {
 		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
 	}

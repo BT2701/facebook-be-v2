@@ -66,6 +66,19 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/postdb
       - REDIS_URI=redis:6379
 
+  # Friend Service
+  friend-service:
+    build:
+      context: ./friend-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/frienddb
+      - REDIS_URI=redis:6379
+
   # MongoDB
   mongodb:
     image: mongo:6.0

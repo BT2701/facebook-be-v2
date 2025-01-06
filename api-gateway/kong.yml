@@ -35,6 +35,13 @@ services:
         paths:
           - /post
 
+  - name: friend-service
+    url: http://friend-service:8084
+    routes:
+      - name: friend-route
+        paths:
+          - /friend
+
 plugins:
   - name: cors
     config:
