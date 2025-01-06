@@ -18,20 +18,25 @@ func NewFriendHandler(friendService service.FriendService) *FriendHandler {
 }
 
 func (handler *FriendHandler) CreateFriend(c echo.Context) error {
-	var friend model.Friend
-	friend.ID = primitive.NewObjectID()
-	if err := c.Bind(&friend); err != nil {
-		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
-	}
+    var friend *model.Friend
+    friend = &model.Friend{} // Khởi tạo con trỏ trước khi gán giá trị
+    friend.ID = primitive.NewObjectID()
 
-	if err := handler.friendService.CreateFriend(friend.UserID1, friend.UserID2); err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
-	}
-	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
-		"message": "Friend created successfully",
-		"friend":    friend,
-	}, nil))
+    if err := c.Bind(friend); err != nil {
+        return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
+    }
+
+    createdFriend, err := handler.friendService.CreateFriend(friend.UserID1, friend.UserID2)
+    if err != nil {
+        return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+    }
+
+    return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+        "message": "Friend created successfully",
+        "friend":  createdFriend,
+    }, nil))
 }
+
 
 func (handler *FriendHandler) GetFriend(c echo.Context) error {
 	userID1 := c.Param("userID1")
@@ -67,7 +72,7 @@ func (handler *FriendHandler) UpdateFriend(c echo.Context) error {
 	userID1 := c.Param("userID1")
 	userID2 := c.Param("userID2")
 
-	var friend model.Friend
+	var friend *model.Friend
 	if err := c.Bind(&friend); err != nil {
 		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
 	}
