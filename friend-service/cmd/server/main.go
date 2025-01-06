@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 	"os"
-	// "post-service/internal/adapters/inbound"
-	// "post-service/internal/adapters/outbound"
-	// "post-service/internal/app/service"
-	// "post-service/pkg/database"
-	// "post-service/pkg/utils"
+	"friend-service/internal/adapters/inbound"
+	"friend-service/internal/adapters/outbound"
+	"friend-service/internal/app/service"
+	"friend-service/pkg/database"
+	"friend-service/pkg/utils"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -22,29 +22,15 @@ func main() {
 	// Initialize MongoDB connection
 	database.InitMongoDB()
 	databaseName := os.Getenv("DB_NAME")
-	postCollection := database.GetCollection(databaseName, "posts")
-	commentCollection := database.GetCollection(databaseName, "comments")
-	reactionCollection := database.GetCollection(databaseName, "reactions")
-	storyCollection := database.GetCollection(databaseName, "stories")
+	friendCollection := database.GetCollection(databaseName, "friends")
 
 	// Create repositories and services
-	postRepo := outbound.NewPostRepository(postCollection)
-	postService := service.NewPostService(postRepo)
+	friendRepo := outbound.NewFriendRepository(friendCollection)
+	friendService := service.NewFriendService(friendRepo)
 
-	commentRepo := outbound.NewCommentRepository(commentCollection)
-	commentService := service.NewCommentService(commentRepo)
-
-	reactionRepo := outbound.NewReactionRepository(reactionCollection)
-	reactionService := service.NewReactionService(reactionRepo)
-
-	storyRepo := outbound.NewStoryRepository(storyCollection)
-	storyService := service.NewStoryService(storyRepo)
 
 	// Create handlers
-	postHandler := inbound.NewPostHandler(postService)
-	commentHandler := inbound.NewCommentHandler(commentService)
-	reactionHandler := inbound.NewReactionHandler(reactionService)
-	storyHandler := inbound.NewStoryHandler(storyService)
+	friendHandler := inbound.NewFriendHandler(friendService)
 
 	// Set up Echo
 	e := echo.New()
@@ -60,27 +46,12 @@ func main() {
 	})
 	e.Use(utils.CorsMiddleware())
 
-	e.POST("/posts", postHandler.CreatePost)
-	e.GET("/posts/:id", postHandler.GetPost)
-	e.PUT("/posts/:id", postHandler.UpdatePost)
-	e.DELETE("/posts/:id", postHandler.DeletePost)
-	e.GET("/posts/user/:userID", postHandler.GetPostsByUserID)
-	e.GET("/posts", postHandler.GetPosts)
+	e.POST("/friends", friendHandler.CreateFriend)
+	e.GET("/friends/:id", friendHandler.GetFriend)
+	e.PUT("/friends/:id", friendHandler.UpdateFriend)
+	e.DELETE("/friends/:id", friendHandler.DeleteFriend)
+	e.GET("/friends", friendHandler.GetFriends)
 
-	e.POST("/comments", commentHandler.CreateComment)
-	e.GET("/comments/:id", commentHandler.GetComment)
-	e.PUT("/comments/:id", commentHandler.UpdateComment)
-	e.DELETE("/comments/:id", commentHandler.DeleteComment)
-
-	e.POST("/reactions", reactionHandler.CreateReaction)
-	e.GET("/reactions/:id", reactionHandler.GetReaction)
-	e.PUT("/reactions/:id", reactionHandler.UpdateReaction)
-	e.DELETE("/reactions/:id", reactionHandler.DeleteReaction)
-
-	e.POST("/stories", storyHandler.CreateStory)
-	e.GET("/stories/:id", storyHandler.GetStory)
-	e.PUT("/stories/:id", storyHandler.UpdateStory)
-	e.DELETE("/stories/:id", storyHandler.DeleteStory)
 
 	// Start the server
 	if err := e.Start(":" + os.Getenv("PORT")); err != nil {
