@@ -64,6 +64,8 @@ func main() {
 	e.GET("/posts/:id", postHandler.GetPost)
 	e.PUT("/posts/:id", postHandler.UpdatePost)
 	e.DELETE("/posts/:id", postHandler.DeletePost)
+	e.GET("/posts/user/:userID", postHandler.GetPostsByUserID)
+	e.GET("/posts", postHandler.GetPosts)
 
 	e.POST("/comments", commentHandler.CreateComment)
 	e.GET("/comments/:id", commentHandler.GetComment)

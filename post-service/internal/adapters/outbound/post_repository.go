@@ -13,6 +13,8 @@ type PostRepository interface {
 	GetPost(id string) (*model.Post, error)
 	UpdatePost(post *model.Post) error
 	DeletePost(id string) error
+	GetPostsByUserID(userID string) ([]model.Post, error)
+	GetPosts() ([]model.Post, error)
 }
 
 type postRepository struct {
@@ -50,3 +52,30 @@ func (repo *postRepository) DeletePost(id string) error {
 	return err
 }
 
+func (repo *postRepository) GetPostsByUserID(userID string) ([]model.Post, error) {
+	cursor, err := repo.collection.Find(context.Background(), bson.M{"user_id": userID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+
+	var posts []model.Post
+	if err := cursor.All(context.Background(), &posts); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
+func (repo *postRepository) GetPosts() ([]model.Post, error) {
+	cursor, err := repo.collection.Find(context.Background(), bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+
+	var posts []model.Post
+	if err := cursor.All(context.Background(), &posts); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}

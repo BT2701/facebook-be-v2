@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"post-service/pkg/utils"
 )
 
 type CommentHandler struct {
@@ -21,70 +22,79 @@ func NewCommentHandler(commentService service.CommentService) *CommentHandler {
 func (handler *CommentHandler) CreateComment(c echo.Context) error {
 	var comment model.Comment
 	if err := c.Bind(&comment); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid JSON payload"})
+		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
 	}
 
 	if err := handler.commentService.CreateComment(&comment); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
-
-	return c.JSON(http.StatusCreated, map[string]string{"message": "Comment created successfully"})
+	return c.JSON(http.StatusCreated, utils.NewAPIResponse(http.StatusCreated, map[string]interface{}{
+		"message": "Comment created successfully",
+		"comment": comment,
+	}, nil))
 }
 
 // GetComment retrieves a comment by its ID
 func (handler *CommentHandler) GetComment(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing comment ID"})
+		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Missing comment ID"))
 	}
 
 	comment, err := handler.commentService.GetComment(id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
 
 	if comment == nil {
-		return c.JSON(http.StatusNotFound, map[string]string{"error": "Comment not found"})
+		return c.JSON(http.StatusNotFound, utils.NewAPIResponse(http.StatusNotFound, nil, "Comment not found"))
 	}
 
-	return c.JSON(http.StatusOK, comment)
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"comment": comment,
+	}, nil))
 }
 
 // UpdateComment updates an existing comment
 func (handler *CommentHandler) UpdateComment(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing comment ID"})
+		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Missing comment ID"))
 	}
 
 	var comment model.Comment
 	if err := c.Bind(&comment); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid JSON payload"})
+		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
 	}
 
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid comment ID"})
+		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid comment ID"))
 	}
 
 	comment.ID = objectID // Đảm bảo ID trong request là ID cần cập nhật
 	if err := handler.commentService.UpdateComment(&comment); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{"message": "Comment updated successfully"})
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Comment updated successfully",
+		"comment": comment,
+	}, nil))
 }
 
 // DeleteComment deletes a comment by its ID
 func (handler *CommentHandler) DeleteComment(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing comment ID"})
+		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Missing comment ID"))
 	}
 
 	if err := handler.commentService.DeleteComment(id); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{"message": "Comment deleted successfully"})
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Comment deleted successfully",
+	}, nil))
 }
