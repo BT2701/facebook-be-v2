@@ -36,7 +36,7 @@ services:
           - /post
 
   - name: friend-service
-    url: http://friend-service:8084
+    url: http://friend-service:8085
     routes:
       - name: friend-route
         paths:
