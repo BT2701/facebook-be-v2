@@ -100,4 +100,29 @@ func (handler *FriendHandler) DeleteFriend(c echo.Context) error {
 	}, nil))
 }
 
+func (handler *FriendHandler) GetFriendsByUserID(c echo.Context) error {
+	userID := c.Param("userID")
 
+	friends, err := handler.friendService.GetFriendsByUserID(userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"friends": friends,
+	}, nil))
+}
+
+func (handler *FriendHandler) IsFriend(c echo.Context) error {
+	userID1 := c.Param("userID1")
+	userID2 := c.Param("userID2")
+
+	isFriend, err := handler.friendService.IsFriend(userID1, userID2)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"isFriend": isFriend,
+	}, nil))
+}

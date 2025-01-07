@@ -51,7 +51,8 @@ func main() {
 	e.PUT("/friends/:id", friendHandler.UpdateFriend)
 	e.DELETE("/friends/:id", friendHandler.DeleteFriend)
 	e.GET("/friends", friendHandler.GetFriends)
-
+	e.GET("/friends/:userID/friends", friendHandler.GetFriendsByUserID)
+	e.GET("/friends/:userID1/:userID2", friendHandler.IsFriend)
 
 	// Start the server
 	if err := e.Start(":" + os.Getenv("PORT")); err != nil {

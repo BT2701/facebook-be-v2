@@ -14,6 +14,8 @@ type FriendRepository interface {
 	GetFriends(userID string) ([]*model.Friend, error)
 	UpdateFriend(friend *model.Friend) (*model.Friend, error)
 	DeleteFriend(userID1, userID2 string) error
+	GetFriendsByUserID(userID string) ([]*model.Friend, error)
+	IsFriend(userID1, userID2 string) (bool, error)
 }
 
 type friendRepository struct {
@@ -78,3 +80,31 @@ func (r *friendRepository) DeleteFriend(userID1, userID2 string) error {
 	return nil
 }
 
+func (r *friendRepository) GetFriendsByUserID(userID string) ([]*model.Friend, error) {
+	cursor, err := r.collection.Find(context.Background(), bson.M{"$or": []bson.M{{"userID1": userID}, {"userID2": userID}}})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+
+	var friends []*model.Friend
+	for cursor.Next(context.Background()) {
+		var friend model.Friend
+		err := cursor.Decode(&friend)
+		if err != nil {
+			return nil, err
+		}
+		friends = append(friends, &friend)
+	}
+	return friends, nil
+}
+
+func (r *friendRepository) IsFriend(userID1, userID2 string) (bool, error) {
+	cursor, err := r.collection.Find(context.Background(), bson.M{"$or": []bson.M{{"userID1": userID1, "userID2": userID2}, {"userID1": userID2, "userID2": userID1}}})
+	if err != nil {
+		return false, err
+	}
+	defer cursor.Close(context.Background())
+
+	return cursor.Next(context.Background()), nil
+}

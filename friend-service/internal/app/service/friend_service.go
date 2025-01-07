@@ -5,6 +5,7 @@ import (
 	"friend-service/internal/adapters/outbound"
 	"friend-service/internal/model"
 	"time"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type FriendService interface {
@@ -13,6 +14,8 @@ type FriendService interface {
 	GetFriends(userID string) ([]*model.Friend, error)
 	UpdateFriend(userID1, userID2 string, isFriend bool) (*model.Friend, error)
 	DeleteFriend(userID1, userID2 string) error
+	GetFriendsByUserID(userID string) ([]*model.Friend, error)
+	IsFriend(userID1, userID2 string) (bool, error)
 }
 
 type friendService struct {
@@ -32,15 +35,14 @@ func (s *friendService) CreateFriend(userID1, userID2 string) (*model.Friend, er
 	friend = &model.Friend{
 		UserID1:  userID1,
 		UserID2:  userID2,
-		IsFriend: false,
+		IsFriend: true,
 		Timeline: time.Now(),
 	}
-
+	friend.ID = primitive.NewObjectID()
 	friend, err = s.friendRepository.CreateFriend(friend)
 	if err != nil {
 		return nil, err
 	}
-
 	return friend, nil
 }
 
@@ -86,4 +88,22 @@ func (s *friendService) DeleteFriend(userID1, userID2 string) error {
 	}
 
 	return nil
+}
+
+func (s *friendService) GetFriendsByUserID(userID string) ([]*model.Friend, error) {
+	friends, err := s.friendRepository.GetFriendsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return friends, nil
+}
+
+func (s *friendService) IsFriend(userID1, userID2 string) (bool, error) {
+	isFriend, err := s.friendRepository.IsFriend(userID1, userID2)
+	if err != nil {
+		return false, err
+	}
+
+	return isFriend, nil
 }
