@@ -68,7 +68,7 @@ func (h *SocketHandler) HandleConnection(c echo.Context) error {
         }
 
         message.ID = time.Now().Format("20060102150405") // Unique ID
-        message.Timestamp = time.Now()
+        message.CreatedAt = time.Now()
 
         log.Printf("Received message: %+v", message)
 

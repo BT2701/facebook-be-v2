@@ -8,5 +8,5 @@ type Message struct {
     Sender    string    `json:"sender" bson:"sender"`
     Receiver  string    `json:"receiver" bson:"receiver"`
     Content   string    `json:"content" bson:"content"`
-    Timestamp time.Time `json:"timestamp" bson:"timestamp"`
+    CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }

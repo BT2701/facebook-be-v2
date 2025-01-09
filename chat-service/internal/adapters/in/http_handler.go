@@ -28,7 +28,7 @@ func (h *ChatHandler) SendMessage(c echo.Context) error {
     }
 
     message.ID = primitive.NewObjectID().Hex()
-    message.Timestamp = time.Now()
+    message.CreatedAt = time.Now()
 
     // Call service to save the message
     if err := h.Service.SendMessage(&message); err != nil {
