@@ -110,8 +110,6 @@ func (ctrl *ImageController) InsertImage(c echo.Context) error {
 	}, nil))
 }
 
-
-
 func (ctrl *ImageController) FindAllImages(c echo.Context) error {
 	// Gọi hàm service để tìm tất cả ảnh
 	Images, err := ctrl.service.FindAllImages(context.Background())
