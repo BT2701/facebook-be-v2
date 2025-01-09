@@ -45,7 +45,6 @@ func main() {
 		}
 	})
 	e.Use(utils.CorsMiddleware())
-
 	e.POST("/friends", friendHandler.CreateFriend)
 	e.GET("/friends/:id", friendHandler.GetFriend)
 	e.PUT("/friends/:id", friendHandler.UpdateFriend)
@@ -59,3 +58,4 @@ func main() {
 		log.Fatal("Server error:", err)
 	}
 }
+

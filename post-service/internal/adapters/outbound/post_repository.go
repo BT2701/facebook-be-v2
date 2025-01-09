@@ -15,6 +15,7 @@ type PostRepository interface {
 	DeletePost(id string) error
 	GetPostsByUserID(userID string) ([]model.Post, error)
 	GetPosts() ([]model.Post, error)
+	DeleteAllPosts() error
 }
 
 type postRepository struct {
@@ -78,4 +79,9 @@ func (repo *postRepository) GetPosts() ([]model.Post, error) {
 		return nil, err
 	}
 	return posts, nil
+}
+
+func (repo *postRepository) DeleteAllPosts() error {
+	_, err := repo.collection.DeleteMany(context.Background(), bson.M{})
+	return err
 }

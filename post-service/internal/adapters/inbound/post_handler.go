@@ -107,3 +107,12 @@ func (handler *PostHandler) GetPosts(c echo.Context) error {
 		"posts": posts,
 	}, nil))
 }
+
+func (handler *PostHandler) DeleteAllPosts(c echo.Context) error {
+	if err := handler.postService.DeleteAllPosts(); err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Delete all posts successful",
+	}, nil))
+}

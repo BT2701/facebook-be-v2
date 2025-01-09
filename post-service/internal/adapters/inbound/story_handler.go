@@ -4,10 +4,12 @@ import (
 	"net/http"
 	"post-service/internal/app/service"
 	"post-service/internal/model"
+	"time"
+
+	"post-service/pkg/utils"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"post-service/pkg/utils"
 )
 
 type StoryHandler struct {
@@ -25,13 +27,17 @@ func (handler *StoryHandler) CreateStory(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
 	}
 
-	if err := handler.storyService.CreateStory(&story); err != nil {
+	story.ID = primitive.NewObjectID()
+	story.Timeline= time.Now().Format("2006-01-02 15:04:05")
+
+	createdStory, err := handler.storyService.CreateStory(&story)
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
 
 	return c.JSON(http.StatusCreated, utils.NewAPIResponse(http.StatusCreated, map[string]interface{}{
 		"message": "Story created successfully",
-		"story":   story,
+		"story":   createdStory,
 	}, nil))
 }
 
@@ -100,4 +106,33 @@ func (handler *StoryHandler) DeleteStory(c echo.Context) error {
 		"message": "Story deleted successfully",
 	}, nil))
 	
+}
+
+// GetStoriesByUserID handles retrieving stories by user ID
+func (handler *StoryHandler) GetStoriesByUserID(c echo.Context) error {
+	userID := c.Param("userID")
+	if userID == "" {
+		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Missing user ID"))
+	}
+
+	stories, err := handler.storyService.GetStoriesByUserID(userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"stories": stories,
+	}, nil))
+}
+
+// GetStories handles retrieving all stories
+func (handler *StoryHandler) GetStories(c echo.Context) error {
+	stories, err := handler.storyService.GetStories()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"stories": stories,
+	}, nil))
 }

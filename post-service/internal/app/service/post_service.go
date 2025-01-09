@@ -13,6 +13,7 @@ type PostService interface {
 	DeletePost(id string) error
 	GetPostsByUserID(userID string) ([]model.Post, error)
 	GetPosts() ([]model.Post, error)
+	DeleteAllPosts() error
 }
 
 type postService struct {
@@ -46,4 +47,8 @@ func (service *postService) GetPostsByUserID(userID string) ([]model.Post, error
 
 func (service *postService) GetPosts() ([]model.Post, error) {
 	return service.postRepository.GetPosts()
+}
+
+func (service *postService) DeleteAllPosts() error {
+	return service.postRepository.DeleteAllPosts()
 }

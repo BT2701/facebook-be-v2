@@ -66,6 +66,7 @@ func main() {
 	e.DELETE("/posts/:id", postHandler.DeletePost)
 	e.GET("/posts/user/:userID", postHandler.GetPostsByUserID)
 	e.GET("/posts", postHandler.GetPosts)
+	e.DELETE("/posts", postHandler.DeleteAllPosts)
 
 	e.POST("/comments", commentHandler.CreateComment)
 	e.GET("/comments/:id", commentHandler.GetComment)
@@ -81,6 +82,8 @@ func main() {
 	e.GET("/stories/:id", storyHandler.GetStory)
 	e.PUT("/stories/:id", storyHandler.UpdateStory)
 	e.DELETE("/stories/:id", storyHandler.DeleteStory)
+	e.GET("/stories/user/:userID", storyHandler.GetStoriesByUserID)
+	e.GET("/stories", storyHandler.GetStories)
 
 	// Start the server
 	if err := e.Start(":" + os.Getenv("PORT")); err != nil {
