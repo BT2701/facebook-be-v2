@@ -28,7 +28,7 @@ func (handler *StoryHandler) CreateStory(c echo.Context) error {
 	}
 
 	story.ID = primitive.NewObjectID()
-	story.Timeline= time.Now().Format("2006-01-02 15:04:05")
+	story.Timeline= time.Now()
 
 	createdStory, err := handler.storyService.CreateStory(&story)
 	if err != nil {
@@ -134,5 +134,16 @@ func (handler *StoryHandler) GetStories(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
 		"stories": stories,
+	}, nil))
+}
+
+// DeleteStories handles deleting all stories
+func (handler *StoryHandler) DeleteStories(c echo.Context) error {
+	if err := handler.storyService.DeleteStories(); err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Stories deleted successfully",
 	}, nil))
 }

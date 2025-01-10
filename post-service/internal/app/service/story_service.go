@@ -3,6 +3,7 @@ package service
 import (
 	"post-service/internal/adapters/outbound"
 	"post-service/internal/model"
+	"time"
 )
 
 type StoryService interface {
@@ -12,6 +13,7 @@ type StoryService interface {
 	DeleteStory(id string) error
 	GetStoriesByUserID(userID string) ([]model.Story, error)
 	GetStories() ([]model.Story, error)
+	DeleteStories() error
 }
 
 type storyService struct {
@@ -39,9 +41,26 @@ func (service *storyService) DeleteStory(id string) error {
 }
 
 func (service *storyService) GetStoriesByUserID(userID string) ([]model.Story, error) {
-	return service.storyRepository.GetStoriesByUserID(userID)
+	stories, err := service.storyRepository.GetStoriesByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var recentStories []model.Story
+	now := time.Now()
+	for _, story := range stories {
+		if now.Sub(story.Timeline) <= 24*time.Hour {
+			recentStories = append(recentStories, story)
+		}
+	}
+
+	return recentStories, nil
 }
 
 func (service *storyService) GetStories() ([]model.Story, error) {
 	return service.storyRepository.GetStories()
+}
+
+func (service *storyService) DeleteStories() error {
+	return service.storyRepository.DeleteStories()
 }

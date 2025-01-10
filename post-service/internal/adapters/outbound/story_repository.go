@@ -15,6 +15,7 @@ type StoryRepository interface {
 	DeleteStory(id string) error
 	GetStoriesByUserID(userID string) ([]model.Story, error)
 	GetStories() ([]model.Story, error)
+	DeleteStories () error
 }
 
 type storyRepository struct {
@@ -78,4 +79,9 @@ func (repo *storyRepository) GetStories() ([]model.Story, error) {
 		return nil, err
 	}
 	return stories, nil
+}
+
+func (repo *storyRepository) DeleteStories() error {
+	_, err := repo.collection.DeleteMany(context.Background(), bson.M{})
+	return err
 }
