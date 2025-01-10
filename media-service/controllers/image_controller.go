@@ -8,11 +8,10 @@ import (
 	"snake_api/models"
 	"snake_api/services"
 
-	// "snake_api/utils"
-
 	"github.com/labstack/echo/v4"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 type ImageController struct {
@@ -39,76 +38,85 @@ func newAPIResponse(status int, data interface{}, err interface{}) *APIResponse 
 }
 
 func (ctrl *ImageController) InsertImage(c echo.Context) error {
-	// Lấy file từ form-data
-	file, err := c.FormFile("imageFile")
-	if err != nil {
-		fmt.Println("Error getting form file:", err)
-		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid file"))
-	}
-	fmt.Println("Form file retrieved successfully")
+    // Lấy file từ form-data
+    file, err := c.FormFile("imageFile")
+    if err != nil {
+        fmt.Println("Error getting form file:", err)
+        return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid file"))
+    }
+    fmt.Println("Form file retrieved successfully")
 
-	// Tạo đường dẫn lưu file
-	filePath := fmt.Sprintf("./uploads/%s", file.Filename)
+    // Tạo thư mục nếu chưa tồn tại
+    if err := os.MkdirAll("./uploads", os.ModePerm); err != nil {
+        fmt.Println("Error creating uploads directory:", err)
+        return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, "Cannot create uploads directory"))
+    }
 
-	// Kiểm tra nếu file đã tồn tại
-	if _, err := os.Stat(filePath); err == nil {
-		fmt.Println("File already exists at path:", filePath)
-	} else if os.IsNotExist(err) {
-		// Nếu file chưa tồn tại, thực hiện lưu file
-		fmt.Println("File does not exist, saving new file")
+    // Làm sạch tên file và tạo đường dẫn lưu file
+    safeFileName := filepath.Base(file.Filename)
+    absPath, _ := filepath.Abs("./uploads")
+    filePath := fmt.Sprintf("%s/%s", absPath, safeFileName)
+    fmt.Println("Absolute file path:", filePath)
 
-		// Mở file
-		src, err := file.Open()
-		if err != nil {
-			fmt.Println("Error opening file:", err)
-			return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, "Cannot open file"))
-		}
-		defer src.Close()
+    // Kiểm tra nếu file đã tồn tại
+    if _, err := os.Stat(filePath); err == nil {
+        fmt.Println("File already exists at path:", filePath)
+    } else if os.IsNotExist(err) {
+        fmt.Println("File does not exist, saving new file")
 
-		// Tạo file đích để lưu
-		dst, err := os.Create(filePath)
-		if err != nil {
-			fmt.Println("Error creating file:", err)
-			return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, "Cannot create file"))
-		}
-		defer dst.Close()
+        // Mở file
+        src, err := file.Open()
+        if err != nil {
+            fmt.Println("Error opening file:", err)
+            return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, "Cannot open file"))
+        }
+        defer src.Close()
 
-		// Ghi dữ liệu vào file
-		if _, err = io.Copy(dst, src); err != nil {
-			fmt.Println("Error saving file:", err)
-			return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, "Cannot save file"))
-		}
-		fmt.Println("File saved successfully")
-	} else {
-		fmt.Println("Error checking file existence:", err)
-		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, "Error checking file existence"))
-	}
+        // Tạo file đích để lưu
+        dst, err := os.Create(filePath)
+        if err != nil {
+            fmt.Println("Error creating file:", err)
+            return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, "Cannot create file"))
+        }
+        defer dst.Close()
 
-	// Lấy thông tin từ form-data
-	userID := c.FormValue("user_id")
-	postID := c.FormValue("post_id")
-	storyID := c.FormValue("story_id")
-	fmt.Println("Form values retrieved - userID:", userID, "postID:", postID, "storyID:", storyID)
+        // Ghi dữ liệu vào file
+        if _, err := io.Copy(dst, src); err != nil {
+            fmt.Println("Error saving file:", err)
+            return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, "Cannot save file"))
+        }
+        fmt.Println("File saved successfully:", filePath)
+    } else {
+        fmt.Println("Error checking file existence:", err)
+        return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, "Error checking file existence"))
+    }
 
-	// Lưu metadata vào model
-	input := models.Image{
-		Name:    file.Filename,
-		Url:     fmt.Sprintf("/uploads/%s", file.Filename), // URL để truy cập
-		UserID:  userID,
-		PostID:  postID,
-		StoryID: storyID,
-	}
-	if err := ctrl.service.InsertImage(context.Background(), input); err != nil {
-		fmt.Println("Error inserting image metadata:", err)
-		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
-	}
-	fmt.Println("Image metadata inserted successfully")
+    // Lấy thông tin từ form-data
+    userID := c.FormValue("user_id")
+    postID := c.FormValue("post_id")
+    storyID := c.FormValue("story_id")
+    fmt.Println("Form values retrieved - userID:", userID, "postID:", postID, "storyID:", storyID)
 
-	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
-		"message": "Insert successful",
-		"url":     input.Url,
-	}, nil))
+    // Lưu metadata vào model
+    input := models.Image{
+        Name:    safeFileName,
+        Url:     fmt.Sprintf("/uploads/%s", safeFileName),
+        UserID:  userID,
+        PostID:  postID,
+        StoryID: storyID,
+    }
+    if err := ctrl.service.InsertImage(context.Background(), input); err != nil {
+        fmt.Println("Error inserting image metadata:", err)
+        return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+    }
+    fmt.Println("Image metadata inserted successfully")
+
+    return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
+        "message": "Insert successful",
+        "url":     input.Url,
+    }, nil))
 }
+
 
 func (ctrl *ImageController) FindAllImages(c echo.Context) error {
 	// Gọi hàm service để tìm tất cả ảnh
