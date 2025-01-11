@@ -3,11 +3,10 @@ package services
 import (
 	"context"
 	"errors"
-	"snake_api/models"
-	"snake_api/repositories"
-	"snake_api/utils"
 	"time"
-
+	"user-service/internal/models"
+	"user-service/internal/adapters/outbound"
+	"user-service/pkg/utils"
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
@@ -32,11 +31,11 @@ type UserService interface {
 }
 
 type userServiceImpl struct {
-	repo        repositories.UserRepository
+	repo        outbound.UserRepository
 	redisClient *redis.Client
 }
 
-func NewUserService(repo repositories.UserRepository, redisClient *redis.Client) UserService {
+func NewUserService(repo outbound.UserRepository, redisClient *redis.Client) UserService {
 	return &userServiceImpl{repo: repo, redisClient: redisClient}
 }
 

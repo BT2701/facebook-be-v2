@@ -2,11 +2,10 @@ package routes
 
 import (
 	"os"
-	"snake_api/controllers"
-	"snake_api/repositories"
-	"snake_api/services"
-	"snake_api/utils"
-
+	"user-service/internal/adapters/outbound"
+	"user-service/internal/app/services"
+	"user-service/internal/adapters/inbound"
+	"user-service/pkg/utils"
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,9 +16,9 @@ func SetupRouter(userCollection *mongo.Collection) *echo.Echo {
 		Addr: os.Getenv("REDIS_URI"), // Địa chỉ Redis
 	})
 	// Khởi tạo repository, service, và controller
-	userRepo := repositories.NewUserRepository(userCollection)
+	userRepo := outbound.NewUserRepository(userCollection)
 	userService := services.NewUserService(userRepo, redisClient)
-	userController := controllers.NewUserController(userService)
+	userController := inbound.NewUserController(userService)
 
 	e := echo.New()
 

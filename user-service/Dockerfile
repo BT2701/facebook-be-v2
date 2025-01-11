@@ -1,16 +1,13 @@
-# Sử dụng base image Golang
-FROM golang:1.22
+# Dockerfile for media service
+
+FROM golang:1.22 AS build
 
 WORKDIR /app
 
-# Copy code và module Go
-COPY . .
-
-# Tải các dependency
+COPY go.mod go.sum ./
 RUN go mod tidy
 
-# Build binary
-RUN go build -o user-service
+COPY . .
+RUN go build -o server ./cmd/server
 
-# Chạy ứng dụng
-CMD ["./user-service"]
+CMD ["./server"]

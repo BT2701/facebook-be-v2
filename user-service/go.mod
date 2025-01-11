@@ -1,4 +1,4 @@
-module snake_api
+module user-service
 
 go 1.22
 
