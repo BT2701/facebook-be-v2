@@ -2,11 +2,10 @@ package routes
 
 import (
 	"os"
-	"snake_api/controllers"
-	"snake_api/repositories"
-	"snake_api/services"
-	"snake_api/utils"
-
+	"media-service/internal/adapters/inbound"
+	"media-service/internal/adapters/outbound"
+	"media-service/pkg/utils"
+	"media-service/internal/app/services"
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,9 +16,9 @@ func SetupRouter(ImageCollection *mongo.Collection) *echo.Echo {
 		Addr: os.Getenv("REDIS_URI"), // Địa chỉ Redis
 	})
 	// Khởi tạo repository, service, và controller
-	ImageRepo := repositories.NewImageRepository(ImageCollection)
+	ImageRepo := outbound.NewImageRepository(ImageCollection)
 	ImageService := services.NewImageService(ImageRepo, redisClient)
-	ImageController := controllers.NewImageController(ImageService)
+	ImageController := inbound.NewImageController(ImageService)
 
 	e := echo.New()
 

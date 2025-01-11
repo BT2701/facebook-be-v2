@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 	"os"
-	"snake_api/config"
-	"snake_api/routes"
+	"media-service/pkg/database"
+	"media-service/cmd/routes"
 	"github.com/joho/godotenv"
 )
 
@@ -16,10 +16,10 @@ func main() {
 	}
 
 	// Connect to MongoDB
-	config.ConnectDB()
+	database.ConnectDB()
 
 	// Get the image collection from the connected DB
-	imageCollection := config.GetCollection("images")
+	imageCollection := database.GetCollection("images")
 
 	// Set up router and pass the collection to SetupRouter
 	router := routes.SetupRouter(imageCollection)

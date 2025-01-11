@@ -1,13 +1,11 @@
-package controllers
+package inbound
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-
-	"snake_api/models"
-	"snake_api/services"
-
+	"media-service/internal/models"
+	"media-service/internal/app/services"
 	"github.com/labstack/echo/v4"
 	"io"
 	"os"

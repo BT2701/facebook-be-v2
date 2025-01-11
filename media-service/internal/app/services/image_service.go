@@ -2,16 +2,9 @@ package services
 
 import (
 	"context"
-	// "errors"
-	"snake_api/models"
-	"snake_api/repositories"
-	// "snake_api/utils"
-	// "time"
-
+	"media-service/internal/models"
+	"media-service/internal/adapters/outbound"
 	"github.com/go-redis/redis/v8"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
-	// "golang.org/x/crypto/bcrypt"
-	// "github.com/golang-jwt/jwt/v5"
 	"os"
 )
 
@@ -29,11 +22,11 @@ type ImageService interface {
 }
 
 type ImageServiceImpl struct {
-	repo        repositories.ImageRepository
+	repo        outbound.ImageRepository
 	redisClient *redis.Client
 }
 
-func NewImageService(repo repositories.ImageRepository, redisClient *redis.Client) ImageService {
+func NewImageService(repo outbound.ImageRepository, redisClient *redis.Client) ImageService {
 	return &ImageServiceImpl{repo: repo, redisClient: redisClient}
 }
 

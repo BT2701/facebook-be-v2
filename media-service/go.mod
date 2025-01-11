@@ -1,4 +1,4 @@
-module snake_api
+module media-service
 
 go 1.22
 
