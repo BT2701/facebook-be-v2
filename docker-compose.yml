@@ -81,6 +81,19 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/frienddb
       - REDIS_URI=redis:6379
 
+  # Game Service
+  game-service:
+    build:
+      context: ./game-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/gamedb
+      - REDIS_URI=redis:6379
+
   # MongoDB
   mongodb:
     image: mongo:6.0

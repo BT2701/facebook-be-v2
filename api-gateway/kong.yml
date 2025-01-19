@@ -42,6 +42,13 @@ services:
         paths:
           - /friend
 
+  - name: game-service
+    url: http://game-service:8086
+    routes:
+      - name: game-route
+        paths:
+          - /game
+
 plugins:
   - name: cors
     config:
