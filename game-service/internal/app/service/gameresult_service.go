@@ -11,6 +11,7 @@ type GameResultService interface {
 	GetGameResultsByPlayerID(playerID string) ([]*models.GameResult, error)
 	UpdateGameResult(game *models.GameResult) (*models.GameResult, error)
 	DeleteGameResult(id string) error
+	GetGameResultsBySessionID(sessionID string) ([]*models.GameResult, error)
 }
 
 type gameResultService struct {
@@ -41,3 +42,6 @@ func (s *gameResultService) DeleteGameResult(id string) error {
 	return s.repo.DeleteGameResult(id)
 }
 
+func (s *gameResultService) GetGameResultsBySessionID(sessionID string) ([]*models.GameResult, error) {
+	return s.repo.GetGameResultsBySessionID(sessionID)
+}

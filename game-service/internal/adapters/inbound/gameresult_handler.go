@@ -81,3 +81,16 @@ func (handler *GameResultHandler) DeleteGameResult(c echo.Context) error {
 		"message": "GameResult deleted successfully",
 	}, nil))
 }
+
+func (handler *GameResultHandler) GetGameResultsBySessionID(c echo.Context) error {
+	sessionID := c.Param("session_id")
+
+	gameResults, err := handler.gameResultService.GetGameResultsBySessionID(sessionID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, utils.NewAPIResponse(http.StatusNotFound, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"gameResults": gameResults,
+	}, nil))
+}

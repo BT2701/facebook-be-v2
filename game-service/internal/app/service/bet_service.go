@@ -2,41 +2,28 @@ package service
 
 import (
 	"game-service/internal/models"
-	"game-service/internal/adapters/outbound"
+	"game-service/pkg/utils"
+	"fmt"
 )
 
-type BetService interface {
-	CreateBet(bet *models.BetOption) (*models.BetOption, error)
-	GetBetByID(id string) (*models.BetOption, error)
-	GetBetsByPlayerID(playerID string) ([]*models.BetOption, error)
-	UpdateBet(bet *models.BetOption) (*models.BetOption, error)
-	DeleteBet(id string) error
+const betOptionsFilePath = "pkg/json/bet_options.json"
+
+type BetService struct{}
+
+func NewBetService() *BetService {
+	return &BetService{}
 }
 
-type betService struct {
-	repo outbound.BetOptionRepository
-}
+func (s *BetService) LoadBetOptions() (*models.GameBetOptions, error) {
+	var gameBetOptionData struct {
+		GameName string                `json:"game_name"`
+		Data     models.GameBetOptions `json:"data"`
+	}
 
-func NewBetService(repo outbound.BetOptionRepository) BetService {
-	return &betService{repo}
-}
+	err := utils.LoadJSONData(betOptionsFilePath, &gameBetOptionData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load bet options: %w", err)
+	}
 
-func (s *betService) CreateBet(bet *models.BetOption) (*models.BetOption, error) {
-	return s.repo.CreateBetOption(bet)
-}
-
-func (s *betService) GetBetByID(id string) (*models.BetOption, error) {
-	return s.repo.GetBetOptionByID(id)
-}
-
-func (s *betService) GetBetsByPlayerID(playerID string) ([]*models.BetOption, error) {
-	return s.repo.GetBetOptionsByPlayerID(playerID)
-}
-
-func (s *betService) UpdateBet(bet *models.BetOption) (*models.BetOption, error) {
-	return s.repo.UpdateBetOption(bet)
-}
-
-func (s *betService) DeleteBet(id string) error {
-	return s.repo.DeleteBetOption(id)
+	return &gameBetOptionData.Data, nil
 }

@@ -1,12 +1,15 @@
 package inbound
 
 import (
-	"net/http"
 	"game-service/internal/app/service"
 	"game-service/internal/models"
 	"game-service/pkg/utils"
+	"net/http"
+	"time"
+
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"strconv"
 )
 
 type GameSessionHandler struct {
@@ -21,6 +24,7 @@ func (handler *GameSessionHandler) CreateGameSession(c echo.Context) error {
 	var gameSession *models.GameSession
 	gameSession = &models.GameSession{} // Khởi tạo con trỏ trước khi gán giá trị
 	gameSession.ID = primitive.NewObjectID()
+	gameSession.CreatedAt = time.Now()
 
 	if err := c.Bind(gameSession); err != nil {
 		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
@@ -53,7 +57,20 @@ func (handler *GameSessionHandler) GetGameSessionByID(c echo.Context) error {
 func (handler *GameSessionHandler) GetGameSessionsByPlayerID(c echo.Context) error {
 	playerID := c.Param("player_id")
 
-	gameSessions, err := handler.gameSessionService.GetGameSessionsByPlayerID(playerID)
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 7 // Mặc định 7 dòng mỗi trang
+	}
+
+	gameSessions, err := handler.gameSessionService.GetGameSessionsByPlayerID(playerID, page, limit)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, utils.NewAPIResponse(http.StatusNotFound, nil, err.Error()))
 	}
@@ -62,6 +79,7 @@ func (handler *GameSessionHandler) GetGameSessionsByPlayerID(c echo.Context) err
 		"gameSessions": gameSessions,
 	}, nil))
 }
+
 
 func (handler *GameSessionHandler) UpdateGameSession(c echo.Context) error {
 	// gameSessionID := c.Param("id")

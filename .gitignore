@@ -2,3 +2,4 @@ Snake_API.code-workspace
 .vscode/
 build/
 media-service/uploads/
+game-service/pkg/json

@@ -1,42 +1,46 @@
 package service
 
 import (
+	"fmt"
 	"game-service/internal/models"
-	"game-service/internal/adapters/outbound"
+	"game-service/pkg/utils"
 )
 
-type SymbolService interface {
-	CreateSymbol(symbol *models.Symbol) (*models.Symbol, error)
-	GetSymbolByID(id string) (*models.Symbol, error)
-	GetSymbolsByGameID(gameID string) ([]*models.Symbol, error)
-	UpdateSymbol(symbol *models.Symbol) (*models.Symbol, error)
-	DeleteSymbol(id string) error
+const symbolsFilePath = "pkg/json/symbols.json"
+
+type SymbolService struct{}
+
+func NewSymbolService() *SymbolService {
+	return &SymbolService{}
 }
 
-type symbolService struct {
-	repo outbound.SymbolRepository
+type GameSymbols struct {
+	GameName string              `json:"game_name"`
+	Data     models.GameSymbolData `json:"data"`
 }
 
-func NewSymbolService(repo outbound.SymbolRepository) SymbolService {
-	return &symbolService{repo}
+func (s *SymbolService)LoadSymbols() (*models.GameSymbolData, error) {
+	var gameSymbols GameSymbols
+
+	err := utils.LoadJSONData(symbolsFilePath, &gameSymbols)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load symbols: %w", err)
+	}
+
+	return &gameSymbols.Data, nil
 }
 
-func (s *symbolService) CreateSymbol(symbol *models.Symbol) (*models.Symbol, error) {
-	return s.repo.CreateSymbol(symbol)
+func (s *SymbolService) GetSymbolValue(symbolName string, count int) float64 {
+	symbolData, err := s.LoadSymbols()
+	if err != nil {
+		return 0.0 // Trường hợp không load được symbols
+	}
+	
+	for _, symbol := range symbolData.Symbols {
+		if symbol.Name == symbolName {
+			return symbol.Values[fmt.Sprint(count)]
+		}
+	}
+	return 0.0
 }
 
-func (s *symbolService) GetSymbolByID(id string) (*models.Symbol, error) {
-	return s.repo.GetSymbolByID(id)
-}
-
-func (s *symbolService) GetSymbolsByGameID(gameID string) ([]*models.Symbol, error) {
-	return s.repo.GetSymbolsByGameID(gameID)
-}
-
-func (s *symbolService) UpdateSymbol(symbol *models.Symbol) (*models.Symbol, error) {
-	return s.repo.UpdateSymbol(symbol)
-}
-
-func (s *symbolService) DeleteSymbol(id string) error {
-	return s.repo.DeleteSymbol(id)
-}

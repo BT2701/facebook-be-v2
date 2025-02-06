@@ -11,6 +11,8 @@ type PlayerService interface {
 	GetPlayersByGameID(gameID string) ([]*models.Player, error)
 	UpdatePlayer(player *models.Player) (*models.Player, error)
 	DeletePlayer(id string) error
+	GetAllPlayers() ([]*models.Player, error)
+	UpdateBalance(playerID string, amount float64) (float64,error)
 }
 
 type playerService struct {
@@ -41,3 +43,10 @@ func (s *playerService) DeletePlayer(id string) error {
 	return s.repo.DeletePlayer(id)
 }
 
+func (s *playerService) GetAllPlayers() ([]*models.Player, error) {
+	return s.repo.GetAllPlayers()
+}
+
+func (s *playerService) UpdateBalance(playerID string, amount float64) (float64,error) {
+	return s.repo.UpdateBalance(playerID, amount)
+}

@@ -8,7 +8,7 @@ import (
 type GameSessionService interface {
 	CreateGameSession(game *models.GameSession) (*models.GameSession, error)
 	GetGameSessionByID(id string) (*models.GameSession, error)
-	GetGameSessionsByPlayerID(playerID string) ([]*models.GameSession, error)
+	GetGameSessionsByPlayerID(playerID string, page, limit int) ([]*models.GameSession, error)
 	UpdateGameSession(game *models.GameSession) (*models.GameSession, error)
 	DeleteGameSession(id string) error
 }
@@ -29,9 +29,10 @@ func (s *gameSessionService) GetGameSessionByID(id string) (*models.GameSession,
 	return s.repo.GetGameSessionByID(id)
 }
 
-func (s *gameSessionService) GetGameSessionsByPlayerID(playerID string) ([]*models.GameSession, error) {
-	return s.repo.GetGameSessionsByPlayerID(playerID)
+func (s *gameSessionService) GetGameSessionsByPlayerID(playerID string, page, limit int) ([]*models.GameSession, error) {
+	return s.repo.GetGameSessionsByPlayerID(playerID, page, limit)
 }
+
 
 func (s *gameSessionService) UpdateGameSession(game *models.GameSession) (*models.GameSession, error) {
 	return s.repo.UpdateGameSession(game)

@@ -6,6 +6,7 @@ import (
 	"game-service/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type GameResultRepository interface {
@@ -14,6 +15,7 @@ type GameResultRepository interface {
 	GetGameResultsByPlayerID(playerID string) ([]*models.GameResult, error)
 	UpdateGameResult(game *models.GameResult) (*models.GameResult, error)
 	DeleteGameResult(id string) error
+	GetGameResultsBySessionID(sessionID string) ([]*models.GameResult, error)
 }
 
 type gameResultRepository struct {
@@ -93,4 +95,31 @@ func (r *gameResultRepository) DeleteGameResult(id string) error {
 	}
 
 	return nil
+}
+
+func (r *gameResultRepository) GetGameResultsBySessionID(sessionID string) ([]*models.GameResult, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	objectID, err := primitive.ObjectIDFromHex(sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	cursor, err := r.collection.Find(ctx, bson.M{"session_id": objectID})
+	if err != nil {
+		return nil, err
+	}
+
+	var games []*models.GameResult
+	for cursor.Next(ctx) {
+		var game models.GameResult
+		err := cursor.Decode(&game)
+		if err != nil {
+			return nil, err
+		}
+		games = append(games, &game)
+	}
+
+	return games, nil
 }

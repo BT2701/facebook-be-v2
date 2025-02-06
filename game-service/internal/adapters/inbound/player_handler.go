@@ -6,7 +6,8 @@ import (
 	"game-service/internal/models"
 	"game-service/pkg/utils"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	// "go.mongodb.org/mongo-driver/bson/primitive"
+	"strconv"
 )
 
 type PlayerHandler struct {
@@ -20,7 +21,7 @@ func NewPlayerHandler(playerService service.PlayerService) *PlayerHandler {
 func (handler *PlayerHandler) CreatePlayer(c echo.Context) error {
 	var player *models.Player
 	player = &models.Player{} // Khởi tạo con trỏ trước khi gán giá trị
-	player.ID = primitive.NewObjectID()
+	// player.ID = primitive.NewObjectID()
 
 	if err := c.Bind(player); err != nil {
 		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid input"))
@@ -50,32 +51,6 @@ func (handler *PlayerHandler) GetPlayerByID(c echo.Context) error {
 	}, nil))
 }
 
-func (handler *PlayerHandler) GetPlayersByGameID(c echo.Context) error {
-	gameID := c.Param("game_id")
-
-	players, err := handler.playerService.GetPlayersByGameID(gameID)
-	if err != nil {
-		return c.JSON(http.StatusNotFound, utils.NewAPIResponse(http.StatusNotFound, nil, err.Error()))
-	}
-
-	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
-		"players": players,
-	}, nil))
-}
-
-func (handler *PlayerHandler) GetPlayersByGameSessionID(c echo.Context) error {
-	// gameSessionID := c.Param("game_session_id")
-
-	// players, err := handler.playerService.GetPlayersByGameSessionID(gameSessionID)
-	// if err != nil {
-	// 	return c.JSON(http.StatusNotFound, utils.NewAPIResponse(http.StatusNotFound, nil, err.Error()))
-	// }
-
-	// return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
-	// 	"players": players,
-	// }, nil))
-	return nil
-}
 
 func (handler *PlayerHandler) UpdatePlayer(c echo.Context) error {
 	// playerID := c.Param("id")
@@ -107,5 +82,32 @@ func (handler *PlayerHandler) DeletePlayer(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
 		"message": "Player deleted successfully",
+	}, nil))
+}
+
+func (handler *PlayerHandler) GetAllPlayers(c echo.Context) error {
+	players, err := handler.playerService.GetAllPlayers()
+	if err != nil {
+		return c.JSON(http.StatusNotFound, utils.NewAPIResponse(http.StatusNotFound, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"players": players,
+	}, nil))
+}
+
+func (handler *PlayerHandler) UpdateBalance(c echo.Context) error {
+	playerID := c.Param("id")
+	amount := c.QueryParam("amount")
+
+	totalAmount, err := strconv.ParseFloat(amount, 64)
+	updatedBalance, err := handler.playerService.UpdateBalance(playerID, totalAmount)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Balance updated successfully",
+		"balance": updatedBalance,
 	}, nil))
 }

@@ -4,6 +4,7 @@ import (
 	"post-service/internal/adapters/outbound"
 	"post-service/internal/model"
 	"time"
+	"sort"
 )
 
 type PostService interface {
@@ -42,11 +43,27 @@ func (service *postService) DeletePost(id string) error {
 }
 
 func (service *postService) GetPostsByUserID(userID string) ([]model.Post, error) {
-	return service.postRepository.GetPostsByUserID(userID)
+	posts, err := service.postRepository.GetPostsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	// Sort posts by timeline in descending order
+	sort.Slice(posts, func(i, j int) bool {
+		return posts[i].Timeline.After(posts[j].Timeline)
+	})
+	return posts, nil
 }
 
 func (service *postService) GetPosts() ([]model.Post, error) {
-	return service.postRepository.GetPosts()
+	posts, err := service.postRepository.GetPosts()
+	if err != nil {
+		return nil, err
+	}
+	// Sort posts by timeline in descending order
+	sort.Slice(posts, func(i, j int) bool {
+		return posts[i].Timeline.After(posts[j].Timeline)
+	})
+	return posts, nil
 }
 
 func (service *postService) DeleteAllPosts() error {

@@ -2,42 +2,30 @@ package service
 
 import (
 	"game-service/internal/models"
-	"game-service/internal/adapters/outbound"
+	"game-service/pkg/utils"
+	"fmt"
 )
 
-type ReelService interface {
-	CreateReel(reel *models.Reel) (*models.Reel, error)
-	GetReelByID(id string) (*models.Reel, error)
-	GetReelsByGameID(gameID string) ([]*models.Reel, error)
-	UpdateReel(reel *models.Reel) (*models.Reel, error)
-	DeleteReel(id string) error
+const reelFilePath = "pkg/json/reel.json"
+
+type GameReelData struct {
+	GameName string      `json:"game_name"`
+	Data     models.Reel `json:"data"`
 }
 
-type reelService struct {
-	repo outbound.ReelRepository
+type ReelService struct{}
+
+func NewReelService() *ReelService {
+	return &ReelService{}
 }
 
-func NewReelService(repo outbound.ReelRepository) ReelService {
-	return &reelService{repo}
-}
+func (s *ReelService) LoadReel() (*models.Reel, error) {
+	var gameReelData GameReelData
 
-func (s *reelService) CreateReel(reel *models.Reel) (*models.Reel, error) {
-	return s.repo.CreateReel(reel)
-}
+	err := utils.LoadJSONData(reelFilePath, &gameReelData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load reel data: %w", err)
+	}
 
-func (s *reelService) GetReelByID(id string) (*models.Reel, error) {
-	return s.repo.GetReelByID(id)
+	return &gameReelData.Data, nil
 }
-
-func (s *reelService) GetReelsByGameID(gameID string) ([]*models.Reel, error) {
-	return s.repo.GetReelsByGameID(gameID)
-}
-
-func (s *reelService) UpdateReel(reel *models.Reel) (*models.Reel, error) {
-	return s.repo.UpdateReel(reel)
-}
-
-func (s *reelService) DeleteReel(id string) error {
-	return s.repo.DeleteReel(id)
-}
-
