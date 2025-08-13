@@ -3,3 +3,5 @@ Snake_API.code-workspace
 build/
 media-service/uploads/
 game-service/pkg/json
+game-service/backup_db/
+*/*.env
