@@ -1,43 +1,29 @@
 package service
 
 import (
-	"fmt"
-	configsDb "game-service/internal/adapters/db"
+	"game-service/internal/adapters/outbound"
+	"game-service/internal/models"
 )
 
 type FeaturesService interface {
-	GetFeature(key string) (string, error)
-	SetFeature(key string, value string) error
-	GetAllFeatures() (map[string]string, error)
-}
-
-func NewFeaturesService() FeaturesService {
-	return &featuresService{
-		features: make(map[string]string),
-	}
+	GetFeature(gameName string) (models.Common, error)
+	SetFeature(gameName string, value models.Common) error
 }
 
 type featuresService struct {
-	features map[string]string
+	repo outbound.FeaturesRepository
 }
 
-func (s *featuresService) GetFeature(key string) (string, error) {
-	value, ok := s.features[key]
-	if !ok {
-		return "", fmt.Errorf("feature key %s not found", key)
+func NewFeaturesService(repo outbound.FeaturesRepository) FeaturesService {
+	return &featuresService{
+		repo: repo,
 	}
-	return value, nil
 }
 
-func (s *featuresService) SetFeature(key string, value string) error {
-	s.features[key] = value
-	return nil
+func (s *featuresService) GetFeature(gameName string) (models.Common, error) {
+	return s.repo.GetFeature(gameName)
 }
 
-func (s *featuresService) GetAllFeatures() (map[string]string, error) {
-	features, err := configsDb.NewMongoDB(db)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all features: %w", err)
-	}
-	return features, nil
+func (s *featuresService) SetFeature(gameName string, value models.Common) error {
+	return s.repo.SetFeature(gameName, value)
 }

@@ -1,43 +1,29 @@
 package service
 
 import (
-	"fmt"
-	configsDb "game-service/internal/adapters/db"
+	"game-service/internal/adapters/outbound"
+	"game-service/internal/models"
 )
 
 type ReelsService interface {
-	GetReel(key string) (string, error)
-	SetReel(key string, value string) error
-	GetAllReels() (map[string]string, error)
-}
-
-func NewReelsService() ReelsService {
-	return &reelsService{
-		reels: make(map[string]string),
-	}
+	GetReels(gameName string) (models.Common, error)
+	SetReels(gameName string, value models.Common) error
 }
 
 type reelsService struct {
-	reels map[string]string
+	repo outbound.ReelsRepository
 }
 
-func (s *reelsService) GetReel(key string) (string, error) {
-	value, ok := s.reels[key]
-	if !ok {
-		return "", fmt.Errorf("reel key %s not found", key)
+func NewReelsService(repo outbound.ReelsRepository) ReelsService {
+	return &reelsService{
+		repo: repo,
 	}
-	return value, nil
 }
 
-func (s *reelsService) SetReel(key string, value string) error {
-	s.reels[key] = value
-	return nil
+func (s *reelsService) GetReels(gameName string) (models.Common, error) {
+	return s.repo.GetReel(gameName)
 }
 
-func (s *reelsService) GetAllReels() (map[string]string, error) {
-	reels, err := configsDb.NewMongoDB(db)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all reels: %w", err)
-	}
-	return reels, nil
+func (s *reelsService) SetReels(gameName string, value models.Common) error {
+	return s.repo.SetReel(gameName, value)
 }

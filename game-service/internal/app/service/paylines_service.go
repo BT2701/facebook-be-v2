@@ -1,43 +1,29 @@
 package service
 
 import (
-	"fmt"
-	configsDb "game-service/internal/adapters/db"
+	"game-service/internal/adapters/outbound"
+	"game-service/internal/models"
 )
 
 type PaylinesService interface {
-	GetPayline(key string) (string, error)
-	SetPayline(key string, value string) error
-	GetAllPaylines() (map[string]string, error)
-}
-
-func NewPaylinesService() PaylinesService {
-	return &paylinesService{
-		paylines: make(map[string]string),
-	}
+	GetPayline(gameName string) (models.Common, error)
+	SetPayline(gameName string, value models.Common) error
 }
 
 type paylinesService struct {
-	paylines map[string]string
+	repo outbound.PaylinesRepository
 }
 
-func (s *paylinesService) GetPayline(key string) (string, error) {
-	value, ok := s.paylines[key]
-	if !ok {
-		return "", fmt.Errorf("payline key %s not found", key)
+func NewPaylinesService(repo outbound.PaylinesRepository) PaylinesService {
+	return &paylinesService{
+		repo: repo,
 	}
-	return value, nil
 }
 
-func (s *paylinesService) SetPayline(key string, value string) error {
-	s.paylines[key] = value
-	return nil
+func (s *paylinesService) GetPayline(gameName string) (models.Common, error) {
+	return s.repo.GetPayline(gameName)
 }
 
-func (s *paylinesService) GetAllPaylines() (map[string]string, error) {
-	paylines, err := configsDb.NewMongoDB(db)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all paylines: %w", err)
-	}
-	return paylines, nil
+func (s *paylinesService) SetPayline(gameName string, value models.Common) error {
+	return s.repo.SetPayline(gameName, value)
 }

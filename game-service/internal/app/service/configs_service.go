@@ -1,43 +1,29 @@
 package service
 
 import (
-	"fmt"
-	configsDb "game-service/internal/adapters/db"
+	"game-service/internal/adapters/outbound"
+	"game-service/internal/models"
 )
 
 type ConfigsService interface {
-	GetConfig(key string) (string, error)
-	SetConfig(key string, value string) error
-	GetAllConfigs() (map[string]string, error)
-}
-
-func NewConfigsService() ConfigsService {
-	return &configsService{
-		configs: make(map[string]string),
-	}
+	GetConfig(gameName string) (models.Common, error)
+	SetConfig(gameName string, value models.Common) error
 }
 
 type configsService struct {
-	configs map[string]string
+	repo outbound.ConfigsRepository
 }
 
-func (s *configsService) GetConfig(key string) (string, error) {
-	value, ok := s.configs[key]
-	if !ok {
-		return "", fmt.Errorf("config key %s not found", key)
+func NewConfigsService(repo outbound.ConfigsRepository) ConfigsService {
+	return &configsService{
+		repo: repo,
 	}
-	return value, nil
 }
 
-func (s *configsService) SetConfig(key string, value string) error {
-	s.configs[key] = value
-	return nil
+func (s *configsService) GetConfig(gameName string) (models.Common, error) {
+	return s.repo.GetConfig(gameName)
 }
 
-func (s *configsService) GetAllConfigs() (map[string]string, error) {
-	configs, err := configsDb.NewMongoDB(db)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all configs: %w", err)
-	}
-	return configs, nil
+func (s *configsService) SetConfig(gameName string, value models.Common) error {
+	return s.repo.SetConfig(gameName, value)
 }

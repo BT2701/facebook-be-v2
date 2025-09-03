@@ -1,43 +1,29 @@
 package service
 
 import (
-	"fmt"
-	configsDb "game-service/internal/adapters/db"
+	"game-service/internal/adapters/outbound"
+	"game-service/internal/models"
 )
 
 type SymbolsService interface {
-	GetSymbol(key string) (string, error)
-	SetSymbol(key string, value string) error
-	GetAllSymbols() (map[string]string, error)
-}
-
-func NewSymbolsService() SymbolsService {
-	return &symbolsService{
-		symbols: make(map[string]string),
-	}
+	GetSymbol(gameName string) (models.Common, error)
+	SetSymbol(gameName string, value models.Common) error
 }
 
 type symbolsService struct {
-	symbols map[string]string
+	repo outbound.SymbolsRepository
 }
 
-func (s *symbolsService) GetSymbol(key string) (string, error) {
-	value, ok := s.symbols[key]
-	if !ok {
-		return "", fmt.Errorf("symbol key %s not found", key)
+func NewSymbolsService(repo outbound.SymbolsRepository) SymbolsService {
+	return &symbolsService{
+		repo: repo,
 	}
-	return value, nil
 }
 
-func (s *symbolsService) SetSymbol(key string, value string) error {
-	s.symbols[key] = value
-	return nil
+func (s *symbolsService) GetSymbol(gameName string) (models.Common, error) {
+	return s.repo.GetSymbol(gameName)
 }
 
-func (s *symbolsService) GetAllSymbols() (map[string]string, error) {
-	symbols, err := configsDb.NewMongoDB(db)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all symbols: %w", err)
-	}
-	return symbols, nil
+func (s *symbolsService) SetSymbol(gameName string, value models.Common) error {
+	return s.repo.SetSymbol(gameName, value)
 }

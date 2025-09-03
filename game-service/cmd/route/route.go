@@ -16,14 +16,16 @@ func SetupRouter() *echo.Echo {
 	// Initialize MongoDB connection
 	database.InitMongoDB()
 	databaseName := os.Getenv("DB_NAME")
-	bonusGameCollection := database.GetCollection(databaseName, "bonus_games")
 	gameResultCollection := database.GetCollection(databaseName, "game_results")
 	gameSessionCollection := database.GetCollection(databaseName, "game_sessions")
 	playerCollection := database.GetCollection(databaseName, "players")
+	symbolsCollection := database.GetCollection(databaseName, "symbols")
+	configsCollection := database.GetCollection(databaseName, "configs")
+	featuresCollection := database.GetCollection(databaseName, "features")
+	paylinesCollection := database.GetCollection(databaseName, "paylines")
+	reelsCollection := database.GetCollection(databaseName, "reels")
 
 	// Create repositories and services
-	bonusGameRepo := outbound.NewBonusGameRepository(bonusGameCollection)
-	bonusGameService := service.NewBonusGameService(bonusGameRepo)
 
 	gameResultRepo := outbound.NewGameResultRepository(gameResultCollection)
 	gameResultService := service.NewGameResultService(gameResultRepo)
@@ -35,21 +37,30 @@ func SetupRouter() *echo.Echo {
 	playerService := service.NewPlayerService(playerRepo)
 
 
-	symbolService := service.NewSymbolService()
-	paylineService := service.NewPaylineService()
-	betService := service.NewBetService()
-	reelService := service.NewReelService()
+	symbolsRepo := outbound.NewSymbolsRepository(symbolsCollection)
+	symbolsService := service.NewSymbolsService(symbolsRepo)
 
+	configsRepo := outbound.NewConfigsRepository(configsCollection)
+	configsService := service.NewConfigsService(configsRepo)
+
+	featuresRepo := outbound.NewFeaturesRepository(featuresCollection)
+	featuresService := service.NewFeaturesService(featuresRepo)
+
+	paylinesRepo := outbound.NewPaylinesRepository(paylinesCollection)
+	paylinesService := service.NewPaylinesService(paylinesRepo)
+
+	reelsRepo := outbound.NewReelsRepository(reelsCollection)
+	reelsService := service.NewReelsService(reelsRepo)
 
 	// Create handlers
-	bonusGameHandler := inbound.NewBonusGameHandler(bonusGameService)
 	gameResultHandler := inbound.NewGameResultHandler(gameResultService)
 	gameSessionHandler := inbound.NewGameSessionHandler(gameSessionService)
 	playerHandler := inbound.NewPlayerHandler(playerService)
-	symbolHandler := inbound.NewSymbolHandler(symbolService)
-	paylineHandler := inbound.NewPaylineHandler(paylineService)
-	betHandler := inbound.NewBetHandler(betService)
-	reelHandler := inbound.NewReelHandler(reelService)
+	symbolHandler := inbound.NewSymbolsHandler(symbolsService)
+	paylineHandler := inbound.NewPaylinesHandler(paylinesService)
+	reelHandler := inbound.NewReelsHandler(reelsService)
+	configsHandler := inbound.NewConfigsHandler(configsService)
+	featureHandler := inbound.NewFeaturesHandler(featuresService)
 
 	// Set up Echo
 	e := echo.New()
@@ -64,11 +75,6 @@ func SetupRouter() *echo.Echo {
 		}
 	})
 	e.Use(utils.CorsMiddleware())
-
-	e.POST("/bonus_game", bonusGameHandler.CreateBonusGame)
-	e.GET("/bonus_game/:id", bonusGameHandler.GetBonusGameByID)
-	e.PUT("/bonus_game/:id", bonusGameHandler.UpdateBonusGame)
-	e.DELETE("/bonus_game/:id", bonusGameHandler.DeleteBonusGame)
 
 	e.POST("/game_result", gameResultHandler.CreateGameResult)
 	e.GET("/game_result/:id", gameResultHandler.GetGameResultByID)
@@ -91,9 +97,10 @@ func SetupRouter() *echo.Echo {
 	
 	e.GET("/symbols", symbolHandler.GetSymbols)
 	e.GET("/paylines", paylineHandler.GetPaylines)
-	e.POST("/calculate_winnings", paylineHandler.CalculateWinnings)
-	e.GET("/bets", betHandler.GetBets)
-	e.GET("/reels", reelHandler.GetReel)
+	// e.POST("/calculate_winnings", paylineHandler.CalculateWinnings)
+	e.GET("/reels", reelHandler.GetReels)
+	e.GET("/configs", configsHandler.GetConfig)
+	e.GET("/features", featureHandler.GetFeature)
 
 	return e
 }
