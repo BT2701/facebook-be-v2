@@ -24,7 +24,7 @@ func ConnectDB() {
 	// MongoDB connection setup
 	clientOptions := options.Client().ApplyURI(os.Getenv("MONGO_URI"))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Nanosecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	client, err := mongo.Connect(ctx, clientOptions)

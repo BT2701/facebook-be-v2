@@ -25,7 +25,7 @@ func NewPaylinesRepository(collection *mongo.Collection) PaylinesRepository {
 }
 
 func (r *paylinesRepository) GetPayline(gameName string) (models.Common, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	var payline models.Common
@@ -37,7 +37,7 @@ func (r *paylinesRepository) GetPayline(gameName string) (models.Common, error) 
 }
 
 func (r *paylinesRepository) SetPayline(gameName string, value models.Common) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	_, err := r.collection.UpdateOne(ctx, bson.M{"game_name": gameName}, bson.M{"$set": value})
