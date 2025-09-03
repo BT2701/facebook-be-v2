@@ -19,11 +19,11 @@ type Common struct {
 }
 
 var Items = []BackupItem{
-	{"game-service/backup_db/configs.json", "configs"},
-	{"game-service/backup_db/reels.json", "reels"},
-	{"game-service/backup_db/paylines.json", "paylines"},
-	{"game-service/backup_db/symbols.json", "symbols"},
-	{"game-service/backup_db/features.json", "features"},
+	{"backup_db/configs.json", "configs"},
+	{"backup_db/reels.json", "reels"},
+	{"backup_db/paylines.json", "paylines"},
+	{"backup_db/symbols.json", "symbols"},
+	{"backup_db/features.json", "features"},
 }
 
 type BackupItem struct {

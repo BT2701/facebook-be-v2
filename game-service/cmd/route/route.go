@@ -1,12 +1,12 @@
 package route
 
 import (
-	"os"
 	"game-service/internal/adapters/inbound"
 	"game-service/internal/adapters/outbound"
 	"game-service/internal/app/service"
 	"game-service/pkg/database"
 	"game-service/pkg/utils"
+	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -36,7 +36,6 @@ func SetupRouter() *echo.Echo {
 	playerRepo := outbound.NewPlayerRepository(playerCollection)
 	playerService := service.NewPlayerService(playerRepo)
 
-
 	symbolsRepo := outbound.NewSymbolsRepository(symbolsCollection)
 	symbolsService := service.NewSymbolsService(symbolsRepo)
 
@@ -51,6 +50,12 @@ func SetupRouter() *echo.Echo {
 
 	reelsRepo := outbound.NewReelsRepository(reelsCollection)
 	reelsService := service.NewReelsService(reelsRepo)
+
+	// Backup
+	mongoDB := symbolsCollection.Database() // Lấy đối tượng *mongo.Database
+	backupRepo := outbound.NewBackupRepository()
+	backupService := service.NewBackupService(backupRepo, mongoDB)
+	backupHandler := inbound.NewBackupHandler(backupService)
 
 	// Create handlers
 	gameResultHandler := inbound.NewGameResultHandler(gameResultService)
@@ -94,13 +99,16 @@ func SetupRouter() *echo.Echo {
 	e.DELETE("/player/:id", playerHandler.DeletePlayer)
 	e.GET("/players", playerHandler.GetAllPlayers)
 	e.PUT("/player/:id/balance", playerHandler.UpdateBalance)
-	
+
 	e.GET("/symbols", symbolHandler.GetSymbols)
 	e.GET("/paylines", paylineHandler.GetPaylines)
 	// e.POST("/calculate_winnings", paylineHandler.CalculateWinnings)
 	e.GET("/reels", reelHandler.GetReels)
 	e.GET("/configs", configsHandler.GetConfig)
 	e.GET("/features", featureHandler.GetFeature)
+
+	// Backup API
+	e.POST("/backup", backupHandler.BackupAll)
 
 	return e
 }
