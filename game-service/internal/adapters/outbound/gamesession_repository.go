@@ -2,11 +2,12 @@ package outbound
 
 import (
 	"context"
-	"time"
 	"game-service/internal/models"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -28,7 +29,7 @@ func NewGameSessionRepository(collection *mongo.Collection) GameSessionRepositor
 }
 
 func (r *gameSessionRepository) CreateGameSession(game *models.GameSession) (*models.GameSession, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.InsertOne(ctx, game)
@@ -40,7 +41,7 @@ func (r *gameSessionRepository) CreateGameSession(game *models.GameSession) (*mo
 }
 
 func (r *gameSessionRepository) GetGameSessionByID(id string) (*models.GameSession, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	var game models.GameSession
@@ -53,7 +54,7 @@ func (r *gameSessionRepository) GetGameSessionByID(id string) (*models.GameSessi
 }
 
 func (r *gameSessionRepository) GetGameSessionsByPlayerID(playerID string, page, limit int) ([]*models.GameSession, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	objectID, err := primitive.ObjectIDFromHex(playerID)
@@ -78,9 +79,8 @@ func (r *gameSessionRepository) GetGameSessionsByPlayerID(playerID string, page,
 	return games, nil
 }
 
-
 func (r *gameSessionRepository) UpdateGameSession(game *models.GameSession) (*models.GameSession, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.ReplaceOne(ctx, bson.M{"_id": game.ID}, game)
@@ -92,7 +92,7 @@ func (r *gameSessionRepository) UpdateGameSession(game *models.GameSession) (*mo
 }
 
 func (r *gameSessionRepository) DeleteGameSession(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
@@ -102,4 +102,3 @@ func (r *gameSessionRepository) DeleteGameSession(id string) error {
 
 	return nil
 }
-

@@ -2,11 +2,12 @@ package outbound
 
 import (
 	"context"
-	"time"
 	"game-service/internal/models"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type GameResultRepository interface {
@@ -27,7 +28,7 @@ func NewGameResultRepository(collection *mongo.Collection) GameResultRepository 
 }
 
 func (r *gameResultRepository) CreateGameResult(game *models.GameResult) (*models.GameResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.InsertOne(ctx, game)
@@ -39,7 +40,7 @@ func (r *gameResultRepository) CreateGameResult(game *models.GameResult) (*model
 }
 
 func (r *gameResultRepository) GetGameResultByID(id string) (*models.GameResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	var game models.GameResult
@@ -52,7 +53,7 @@ func (r *gameResultRepository) GetGameResultByID(id string) (*models.GameResult,
 }
 
 func (r *gameResultRepository) GetGameResultsByPlayerID(playerID string) ([]*models.GameResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	cursor, err := r.collection.Find(ctx, bson.M{"player_id": playerID})
@@ -74,7 +75,7 @@ func (r *gameResultRepository) GetGameResultsByPlayerID(playerID string) ([]*mod
 }
 
 func (r *gameResultRepository) UpdateGameResult(game *models.GameResult) (*models.GameResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.ReplaceOne(ctx, bson.M{"_id": game.ID}, game)
@@ -86,7 +87,7 @@ func (r *gameResultRepository) UpdateGameResult(game *models.GameResult) (*model
 }
 
 func (r *gameResultRepository) DeleteGameResult(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
@@ -98,7 +99,7 @@ func (r *gameResultRepository) DeleteGameResult(id string) error {
 }
 
 func (r *gameResultRepository) GetGameResultsBySessionID(sessionID string) ([]*models.GameResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	objectID, err := primitive.ObjectIDFromHex(sessionID)

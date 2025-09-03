@@ -2,11 +2,12 @@ package outbound
 
 import (
 	"context"
-	"time"
 	"game-service/internal/models"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type PlayerRepository interface {
@@ -16,7 +17,7 @@ type PlayerRepository interface {
 	UpdatePlayer(player *models.Player) (*models.Player, error)
 	DeletePlayer(id string) error
 	GetAllPlayers() ([]*models.Player, error)
-	UpdateBalance(playerID string, amount float64) (float64,error)
+	UpdateBalance(playerID string, amount float64) (float64, error)
 }
 
 type playerRepository struct {
@@ -28,7 +29,7 @@ func NewPlayerRepository(collection *mongo.Collection) PlayerRepository {
 }
 
 func (r *playerRepository) CreatePlayer(player *models.Player) (*models.Player, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.InsertOne(ctx, player)
@@ -40,7 +41,7 @@ func (r *playerRepository) CreatePlayer(player *models.Player) (*models.Player, 
 }
 
 func (r *playerRepository) GetPlayerByID(id string) (*models.Player, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	objectID, err := primitive.ObjectIDFromHex(id)
@@ -58,7 +59,7 @@ func (r *playerRepository) GetPlayerByID(id string) (*models.Player, error) {
 }
 
 func (r *playerRepository) GetPlayersByGameID(gameID string) ([]*models.Player, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	cursor, err := r.collection.Find(ctx, bson.M{"game_id": gameID})
@@ -75,7 +76,7 @@ func (r *playerRepository) GetPlayersByGameID(gameID string) ([]*models.Player, 
 }
 
 func (r *playerRepository) UpdatePlayer(player *models.Player) (*models.Player, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.ReplaceOne(ctx, bson.M{"_id": player.ID}, player)
@@ -87,7 +88,7 @@ func (r *playerRepository) UpdatePlayer(player *models.Player) (*models.Player, 
 }
 
 func (r *playerRepository) DeletePlayer(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
@@ -99,7 +100,7 @@ func (r *playerRepository) DeletePlayer(id string) error {
 }
 
 func (r *playerRepository) GetAllPlayers() ([]*models.Player, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	cursor, err := r.collection.Find(ctx, bson.M{})
@@ -115,8 +116,8 @@ func (r *playerRepository) GetAllPlayers() ([]*models.Player, error) {
 	return players, nil
 }
 
-func (r *playerRepository) UpdateBalance(playerID string, amount float64) (float64,error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (r *playerRepository) UpdateBalance(playerID string, amount float64) (float64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	objectID, err := primitive.ObjectIDFromHex(playerID)

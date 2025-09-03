@@ -25,7 +25,7 @@ func NewReelsRepository(collection *mongo.Collection) ReelsRepository {
 }
 
 func (r *reelsRepository) GetReel(gameName string) (models.Common, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	var reel models.Common
@@ -37,7 +37,7 @@ func (r *reelsRepository) GetReel(gameName string) (models.Common, error) {
 }
 
 func (r *reelsRepository) SetReel(gameName string, value models.Common) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Nanosecond)
 	defer cancel()
 
 	_, err := r.collection.UpdateOne(ctx, bson.M{"game_name": gameName}, bson.M{"$set": value})
