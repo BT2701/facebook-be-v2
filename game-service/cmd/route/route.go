@@ -100,12 +100,12 @@ func SetupRouter() *echo.Echo {
 	e.GET("/players", playerHandler.GetAllPlayers)
 	e.PUT("/player/:id/balance", playerHandler.UpdateBalance)
 
-	e.GET("/symbols", symbolHandler.GetSymbols)
-	e.GET("/paylines", paylineHandler.GetPaylines)
+	e.GET("/symbols/:game_name", symbolHandler.GetSymbols)
+	e.GET("/paylines/:game_name", paylineHandler.GetPaylines)
 	// e.POST("/calculate_winnings", paylineHandler.CalculateWinnings)
-	e.GET("/reels", reelHandler.GetReels)
-	e.GET("/configs", configsHandler.GetConfig)
-	e.GET("/features", featureHandler.GetFeature)
+	e.GET("/reels/:game_name", reelHandler.GetReels)
+	e.GET("/configs/:game_name", configsHandler.GetConfig)
+	e.GET("/features/:game_name", featureHandler.GetFeature)
 
 	// Backup API
 	e.POST("/backup", backupHandler.BackupAll)
