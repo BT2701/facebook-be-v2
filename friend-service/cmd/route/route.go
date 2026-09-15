@@ -1,13 +1,13 @@
 package route
 
 import (
-	"os"
 	"friend-service/internal/adapters/inbound"
 	"friend-service/internal/adapters/outbound"
 	"friend-service/internal/app/service"
 	"friend-service/pkg/database"
-	"friend-service/pkg/utils"
+	"os"
 
+	"github.com/BT2701/facebook-be-v2/shared/httpx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -28,17 +28,8 @@ func SetupRouter() *echo.Echo {
 
 	// Set up Echo
 	e := echo.New()
-
-	// Middleware
 	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Response().Header().Set("Access-Control-Allow-Origin", "*")
-			return next(c)
-		}
-	})
-	e.Use(utils.CorsMiddleware())
+	httpx.Apply(e)
 	e.POST("/friends", friendHandler.CreateFriend)
 	e.GET("/friends/:id", friendHandler.GetFriend)
 	e.PUT("/friends/:id", friendHandler.UpdateFriend)

@@ -1,0 +1,12 @@
+go 1.23
+
+use (
+	./chat-service
+	./friend-service
+	./game-service
+	./media-service
+	./notification-service
+	./post-service
+	./shared
+	./user-service
+)

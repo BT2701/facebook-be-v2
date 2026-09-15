@@ -2,10 +2,11 @@ package routes
 
 import (
 	"os"
+	"user-service/internal/adapters/inbound"
 	"user-service/internal/adapters/outbound"
 	"user-service/internal/app/services"
-	"user-service/internal/adapters/inbound"
-	"user-service/pkg/utils"
+
+	"github.com/BT2701/facebook-be-v2/shared/httpx"
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,17 +22,8 @@ func SetupRouter(userCollection *mongo.Collection) *echo.Echo {
 	userController := inbound.NewUserController(userService)
 
 	e := echo.New()
+	httpx.Apply(e)
 
-	// Enable CORS
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Response().Header().Set("Access-Control-Allow-Origin", "*")
-			return next(c)
-		}
-	})
-	e.Use(utils.CorsMiddleware())
-
-	// Routes
 	api := e.Group("/api")
 	{
 		api.POST("/login", userController.Login)
@@ -39,7 +31,6 @@ func SetupRouter(userCollection *mongo.Collection) *echo.Echo {
 		api.POST("/forgot", userController.ForgotPassword)
 		api.POST("/reset", userController.ResetPassword)
 		api.GET("/users", userController.GetAllUsers)
-		api.DELETE("/users", userController.DeleteAllUsers)
 		api.PUT("/logout", userController.Logout)
 		api.PUT("/edit", userController.EditUser)
 		api.GET("/user/:id", userController.GetByID)

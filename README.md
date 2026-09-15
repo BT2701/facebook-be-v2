@@ -1,101 +1,77 @@
-# Facebook Backend V2 - Golang
+# Facebook Backend V2
 
-This project is a backend service for a Facebook-like application, built using modern technologies and a microservices architecture.
+Go microservices for a Facebook-like platform. Kong sits in front of the services.
 
-## Link to Front-end: [Click here](https://github.com/BT2701/facebook-fe-v2)
+Frontend: [facebook-fe-v2](https://github.com/BT2701/facebook-fe-v2)
 
----
+## Version
 
-## Project Overview
+**0.1.0** — shared bootstrap, health checks, graceful shutdown, Docker Compose that actually waits for Mongo/Redis.
 
-### Version
-- **Current Version**: 0.0.2
+## Services
 
-### Services
-The project is divided into multiple microservices, each responsible for a specific domain within the application:
+| Service | Port | Responsibility |
+| --- | --- | --- |
+| user-service | 8080 | Auth, accounts, JWT |
+| notification-service | 8081 | Activity notifications |
+| chat-service | 8082 | Messages and WebSocket |
+| media-service | 8083 | Image upload and static files |
+| post-service | 8084 | Posts, stories, comments, reactions |
+| friend-service | 8085 | Friend graph and requests |
+| game-service | 8086 | Slot game sessions, results, player balance |
+| Kong | 8000 | API gateway |
 
-1. **User Service**  
-   Manages users, accounts, authentication, and authorization (using JWT tokens).
+## Stack
 
-2. **Post Service**  
-   Manages posts, stories, interactions, comments, and reactions; integrated with Google Drive Service for media storage.
+Go 1.23 · Echo · MongoDB · Redis · JWT · Kong · Docker Compose
 
-3. **Friend Service**  
-   Manages friend relationships and handles friend requests.
+Shared code lives in `shared/` (`config`, `httpx`). Each service keeps its own domain and adapters.
 
-4. **Chat Service**  
-   Manages messaging and calls (audio, video) using WebSocket and SignalR.
+## Run locally
 
-5. **Notification Service**  
-   Handles notifications related to friend requests, post interactions, and other activities (via WebSocket).
+Prerequisites: Docker, Go 1.23+.
 
-6. **Game Service**  
-   Manages games available on the platform; currently supports slot games and plans to expand to casual, arcade, and fishing games to diversify gameplay.
+```sh
+cp .env.example .env
+# copy or edit each service .env if you run binaries outside Docker
 
-7. **API Gateway**  
-   Routes and manages communication between services using **Kong API Gateway**.
+docker compose up --build
+```
 
----
+Gateway: `http://localhost:8000`
 
-## Technologies Used
+Health:
 
-- **Golang**: Main programming language for backend services.
-- **Echo**: High-performance, minimalist Go web framework.
-- **JWT**: Secure authentication and authorization.
-- **MongoDB**: NoSQL database for storing user and application data.
-- **Redis**: Caching layer for improved performance and reduced database load.
-- **Docker**: Containerization of all services for easy deployment.
-- **Kong Gateway**: API Gateway for routing and managing microservices traffic.
-- **REST APIs**: For service-to-service and client communication.
-- **WebSocket**: Real-time communication for chat, notifications, and games.
-- **SignalR**: Real-time signaling for audio and video calls.
+```sh
+make health
+# or
+curl http://localhost:8080/health
+```
 
----
+Frontend should use `REACT_APP_API_URL=http://localhost:8000`.
 
-## Version Control
+## Layout
 
-- **Git/GitHub**: Version control and code hosting.
+```
+shared/                 # env load, CORS, /health, graceful shutdown
+user-service/
+post-service/
+friend-service/
+chat-service/
+notification-service/
+media-service/
+game-service/
+api-gateway/kong.yml
+```
 
----
+Each service follows inbound adapter → application service → outbound repository.
 
-## Development Tools
+## Notes
 
-- **Visual Studio Code**: Main editor for development.
-- **Docker Compose**: For running the system locally with all dependencies.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Docker installed on your machine.
-- Golang installed (v1.20+ recommended).
-- MongoDB and Redis instances running (can also run via Docker).
-
-### Running the Application
-
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/BT2701/facebook-be-v2.git
-    ```
-2. Navigate to the project directory:
-    ```sh
-    cd facebook-be-v2
-    ```
-3. Build and run using Docker:
-    ```sh
-    docker-compose up --build
-    ```
-
----
-
-## Contributing
-
-Contributions are welcome! Please fork the repository and submit a pull request.
-
----
+- SMTP for forgot-password is read from `SMTP_FROM` and `SMTP_PASSWORD`. Do not hardcode mail credentials.
+- Destructive wipe routes (`DELETE /users`, `DELETE /posts`, …) are no longer public.
+- Kong runs DB-less from `api-gateway/kong.yml`. There is no migration container.
 
 ## License
 
-This project is licensed under [Apache License Version 2.0](LICENSE).
+Apache License 2.0. See [LICENSE](LICENSE).

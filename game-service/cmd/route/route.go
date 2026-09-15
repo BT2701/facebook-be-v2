@@ -5,9 +5,9 @@ import (
 	"game-service/internal/adapters/outbound"
 	"game-service/internal/app/service"
 	"game-service/pkg/database"
-	"game-service/pkg/utils"
 	"os"
 
+	"github.com/BT2701/facebook-be-v2/shared/httpx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -69,17 +69,8 @@ func SetupRouter() *echo.Echo {
 
 	// Set up Echo
 	e := echo.New()
-
-	// Middleware
 	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Response().Header().Set("Access-Control-Allow-Origin", "*")
-			return next(c)
-		}
-	})
-	e.Use(utils.CorsMiddleware())
+	httpx.Apply(e)
 
 	e.POST("/game_result", gameResultHandler.CreateGameResult)
 	e.GET("/game_result/:id", gameResultHandler.GetGameResultByID)

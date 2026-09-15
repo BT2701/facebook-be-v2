@@ -2,22 +2,19 @@ package main
 
 import (
 	"log"
-	"os"
 	"friend-service/cmd/route"
-	"github.com/joho/godotenv"
+
+	"github.com/BT2701/facebook-be-v2/shared/config"
+	"github.com/BT2701/facebook-be-v2/shared/httpx"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Error loading .env file:", err)
-	}
+	config.Load()
 
-	route := route.SetupRouter()
-
-	// Start the server
-	if err := route.Start(":" + os.Getenv("PORT")); err != nil {
-		log.Fatal("Server error:", err)
+	router := route.SetupRouter()
+	port := config.Get("PORT", "8085")
+	log.Printf("friend-service listening on :%s", port)
+	if err := httpx.Run(router, port); err != nil {
+		log.Fatal(err)
 	}
 }
-

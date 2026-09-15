@@ -1,11 +1,12 @@
 package routes
 
 import (
-	"os"
 	"media-service/internal/adapters/inbound"
 	"media-service/internal/adapters/outbound"
-	"media-service/pkg/utils"
 	"media-service/internal/app/services"
+	"os"
+
+	"github.com/BT2701/facebook-be-v2/shared/httpx"
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,21 +22,10 @@ func SetupRouter(ImageCollection *mongo.Collection) *echo.Echo {
 	ImageController := inbound.NewImageController(ImageService)
 
 	e := echo.New()
-
-	// Enable CORS
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Response().Header().Set("Access-Control-Allow-Origin", "*")
-			return next(c)
-		}
-	})
-	e.Use(utils.CorsMiddleware())
-
-	// Routes
+	httpx.Apply(e)
 
 	e.POST("/image", ImageController.InsertImage)
 	e.GET("/images", ImageController.FindAllImages)
-	e.DELETE("/images", ImageController.DeleteAllImages)
 	e.PUT("/image", ImageController.EditImage)
 	e.GET("/image/user/:id", ImageController.GetImageByUserID)
 	e.GET("/image/post/:id", ImageController.GetImageByPostID)

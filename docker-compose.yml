@@ -1,144 +1,218 @@
-version: "3.8"
-
 services:
-  # User Service
   user-service:
     build:
-      context: ./user-service
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: user-service
+        PORT: "8080"
     ports:
       - "8080:8080"
-    depends_on:
-      - mongodb
-      - redis
+    env_file:
+      - ./user-service/.env
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/userdb
-      - REDIS_URI=redis:6379
+      PORT: "8080"
+      MONGO_URI: mongodb://mongodb:27017
+      REDIS_URI: redis:6379
+      DB_NAME: userdb
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Notification Service
   notification-service:
     build:
-      context: ./notification-service
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: notification-service
+        PORT: "8081"
     ports:
       - "8081:8081"
-    depends_on:
-      - mongodb
-      - redis
+    env_file:
+      - ./notification-service/.env
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/notificationdb
-      - REDIS_URI=redis:6379
+      PORT: "8081"
+      MONGO_URI: mongodb://mongodb:27017
+      REDIS_URI: redis:6379
+      DB_NAME: notificationdb
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Chat Service
   chat-service:
     build:
-      context: ./chat-service
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: chat-service
+        PORT: "8082"
     ports:
       - "8082:8082"
-    depends_on:
-      - mongodb
-      - redis
+    env_file:
+      - ./chat-service/.env
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/chatdb
-      - REDIS_URI=redis:6379
+      PORT: "8082"
+      MONGO_URI: mongodb://mongodb:27017
+      REDIS_URI: redis:6379
+      DB_NAME: chatdb
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Media Service
   media-service:
     build:
-      context: ./media-service
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: media-service
+        PORT: "8083"
     ports:
       - "8083:8083"
-    depends_on:
-      - mongodb
-      - redis
+    env_file:
+      - ./media-service/.env
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/mediadb
-      - REDIS_URI=redis:6379
+      PORT: "8083"
+      MONGO_URI: mongodb://mongodb:27017
+      REDIS_URI: redis:6379
+      DB_NAME: mediadb
     volumes:
-    - ./media-service/uploads:/app/uploads
+      - media_uploads:/app/uploads
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Post Service
   post-service:
     build:
-      context: ./post-service
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: post-service
+        PORT: "8084"
     ports:
       - "8084:8084"
-    depends_on:
-      - mongodb
-      - redis
+    env_file:
+      - ./post-service/.env
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/postdb
-      - REDIS_URI=redis:6379
+      PORT: "8084"
+      MONGO_URI: mongodb://mongodb:27017
+      REDIS_URI: redis:6379
+      DB_NAME: postdb
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Friend Service
   friend-service:
     build:
-      context: ./friend-service
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: friend-service
+        PORT: "8085"
     ports:
       - "8085:8085"
-    depends_on:
-      - mongodb
-      - redis
+    env_file:
+      - ./friend-service/.env
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/frienddb
-      - REDIS_URI=redis:6379
+      PORT: "8085"
+      MONGO_URI: mongodb://mongodb:27017
+      REDIS_URI: redis:6379
+      DB_NAME: frienddb
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Game Service
   game-service:
     build:
-      context: ./game-service
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: game-service
+        PORT: "8086"
     ports:
       - "8086:8086"
-    depends_on:
-      - mongodb
-      - redis
+    env_file:
+      - ./game-service/.env
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/gamedb
-      - REDIS_URI=redis:6379
+      PORT: "8086"
+      MONGO_URI: mongodb://mongodb:27017
+      REDIS_URI: redis:6379
+      DB_NAME: gamedb
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # MongoDB
   mongodb:
-    image: mongo:6.0
+    image: mongo:7.0
     container_name: mongodb
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
-  # Redis
   redis:
-    image: redis:7.2
+    image: redis:7.2-alpine
     container_name: redis
     ports:
       - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
 
-  # Kong API Gateway
   kong:
-    image: kong:3.3
+    image: kong:3.8
     container_name: kong
     depends_on:
-      - kong-migrations
-      - user-service
-      - notification-service
+      user-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      chat-service:
+        condition: service_healthy
+      media-service:
+        condition: service_healthy
+      post-service:
+        condition: service_healthy
+      friend-service:
+        condition: service_healthy
+      game-service:
+        condition: service_healthy
     environment:
-      - KONG_DATABASE=off
-      - KONG_DECLARATIVE_CONFIG=/app/kong.yml
-      - KONG_PROXY_ACCESS_LOG=/dev/stdout
-      - KONG_PROXY_ERROR_LOG=/dev/stderr
-      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
-      - KONG_ADMIN_ERROR_LOG=/dev/stderr
-      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /app/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
     ports:
-      - "8000:8000" # Gateway public port
-      - "8001:8001" # Admin port
+      - "8000:8000"
+      - "8001:8001"
     volumes:
-      - ./api-gateway/kong.yml:/app/kong.yml
-      - ./api-gateway/kong.conf:/etc/kong/kong.conf
-
-  # Kong Migrations (one-time task to set up Kong database)
-  kong-migrations:
-    image: kong:3.3
-    command: kong migrations bootstrap
-    environment:
-      - KONG_DATABASE=off
+      - ./api-gateway/kong.yml:/app/kong.yml:ro
+      - ./api-gateway/kong.conf:/etc/kong/kong.conf:ro
 
 volumes:
   mongodb_data:
+  media_uploads:

@@ -2,12 +2,10 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -15,25 +13,29 @@ import (
 var DB *mongo.Database
 
 func ConnectDB() {
-	// Load environment variables
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	uri := os.Getenv("MONGO_URI")
+	if uri == "" {
+		log.Fatal("MONGO_URI is required")
 	}
-
-	// MongoDB connection setup
-	clientOptions := options.Client().ApplyURI(os.Getenv("MONGO_URI"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		log.Fatal("MongoDB Connection Error: ", err)
+		log.Fatal("MongoDB connection error: ", err)
 	}
 
-	DB = client.Database(os.Getenv("DB_NAME"))
-	fmt.Println("Connected to MongoDB!")
+	if err := client.Ping(ctx, nil); err != nil {
+		log.Fatal("MongoDB ping error: ", err)
+	}
+
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "mediadb"
+	}
+	DB = client.Database(dbName)
+	log.Println("Connected to MongoDB")
 }
 
 func GetCollection(collectionName string) *mongo.Collection {

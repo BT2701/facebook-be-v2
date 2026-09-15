@@ -116,7 +116,11 @@ func (s *userServiceImpl) ForgotPassword(ctx context.Context, email string) (str
 		return "", errors.New("failed to generate reset token")
 	}
 
-	resetURL := "http://localhost:3000/reset-password?token=" + resetToken
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	resetURL := frontendURL + "/reset-password?token=" + resetToken
 	err = utils.SendEmail(email, "Password Reset Request", "Click here to reset your password: "+resetURL)
 	if err != nil {
 		return "", errors.New("failed to send email")

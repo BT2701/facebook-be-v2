@@ -1,15 +1,15 @@
 package route
 
 import (
+	"os"
 	"post-service/internal/adapters/inbound"
 	"post-service/internal/adapters/outbound"
 	"post-service/internal/app/service"
-	"post-service/pkg/utils"
+	"post-service/pkg/database"
 
+	"github.com/BT2701/facebook-be-v2/shared/httpx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"post-service/pkg/database"
-	"os"
 )
 
 func SetupRouter() *echo.Echo {
@@ -42,17 +42,8 @@ func SetupRouter() *echo.Echo {
 
 	// Set up Echo
 	e := echo.New()
-
-	// Middleware
 	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Response().Header().Set("Access-Control-Allow-Origin", "*")
-			return next(c)
-		}
-	})
-	e.Use(utils.CorsMiddleware())
+	httpx.Apply(e)
 
 	e.POST("/posts", postHandler.CreatePost)
 	e.GET("/posts/:id", postHandler.GetPost)
@@ -60,7 +51,6 @@ func SetupRouter() *echo.Echo {
 	e.DELETE("/posts/:id", postHandler.DeletePost)
 	e.GET("/posts/user/:userID", postHandler.GetPostsByUserID)
 	e.GET("/posts", postHandler.GetPosts)
-	e.DELETE("/posts", postHandler.DeleteAllPosts)
 
 	e.POST("/comments", commentHandler.CreateComment)
 	e.GET("/comments/:id", commentHandler.GetComment)

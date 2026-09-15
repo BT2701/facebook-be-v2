@@ -2,33 +2,23 @@ package main
 
 import (
 	"log"
-	"os"
-	"user-service/pkg/database"
 	"user-service/cmd/routes"
-	"github.com/joho/godotenv"
+	"user-service/pkg/database"
+
+	"github.com/BT2701/facebook-be-v2/shared/config"
+	"github.com/BT2701/facebook-be-v2/shared/httpx"
 )
 
 func main() {
-	// Load environment variables
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	config.Load()
 
-	// Connect to MongoDB
 	database.ConnectDB()
-
-	// Get the user collection from the connected DB
 	userCollection := database.GetCollection("users")
-
-	// Set up router and pass the collection to SetupRouter
 	router := routes.SetupRouter(userCollection)
 
-	// Start server
-	port := os.Getenv("PORT")
-	log.Printf("Server running on port %s", port)
-	err = router.Start(":" + port)
-	if err != nil {
+	port := config.Get("PORT", "8080")
+	log.Printf("user-service listening on :%s", port)
+	if err := httpx.Run(router, port); err != nil {
 		log.Fatal(err)
 	}
 }

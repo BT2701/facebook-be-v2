@@ -78,14 +78,13 @@ func (ctrl *UserController) ForgotPassword(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, newAPIResponse(http.StatusBadRequest, nil, "Invalid email"))
 	}
 
-	resetToken, err := ctrl.service.ForgotPassword(context.Background(), input.Email)
+	_, err := ctrl.service.ForgotPassword(context.Background(), input.Email)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
 
 	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
-		"message":     "Password reset email sent successfully",
-		"reset_token": resetToken, // Optional: Include reset token for testing purposes
+		"message": "Password reset email sent successfully",
 	}, nil))
 }
 
