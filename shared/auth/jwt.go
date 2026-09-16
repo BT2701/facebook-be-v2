@@ -70,6 +70,26 @@ func Middleware() echo.MiddlewareFunc {
 	}
 }
 
+func UserID(c echo.Context) string {
+	if value, ok := c.Get("user_id").(string); ok && strings.TrimSpace(value) != "" {
+		return strings.TrimSpace(value)
+	}
+
+	header := c.Request().Header.Get(echo.HeaderAuthorization)
+	if strings.HasPrefix(header, "Bearer ") {
+		if claims, err := Parse(strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))); err == nil {
+			if claims.UserID != "" {
+				return claims.UserID
+			}
+			if claims.Subject != "" {
+				return claims.Subject
+			}
+		}
+	}
+
+	return strings.TrimSpace(c.QueryParam("user_id"))
+}
+
 func skipAuth(c echo.Context) bool {
 	path := c.Request().URL.Path
 	if path == "/health" || strings.HasPrefix(path, "/uploads") {

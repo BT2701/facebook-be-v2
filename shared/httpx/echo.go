@@ -21,7 +21,8 @@ func Apply(e *echo.Echo) {
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		Timeout: 15 * time.Second,
 		Skipper: func(c echo.Context) bool {
-			return strings.Contains(c.Request().URL.Path, "/ws")
+			path := c.Request().URL.Path
+			return strings.Contains(path, "/ws") || path == "/chat" || strings.HasSuffix(path, "/chat")
 		},
 	}))
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{

@@ -165,6 +165,32 @@ services:
       redis:
         condition: service_healthy
 
+  ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: ai-service
+        PORT: "8087"
+    expose:
+      - "8087"
+    env_file:
+      - ./ai-service/.env
+    environment:
+      PORT: "8087"
+      MONGO_URI: mongodb://mongodb:27017
+      REDIS_URI: redis:6379
+      DB_NAME: aidb
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_API_KEY: ${AI_API_KEY:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   mongodb:
     image: mongo:7.0
     container_name: mongodb
@@ -206,6 +232,8 @@ services:
       friend-service:
         condition: service_healthy
       game-service:
+        condition: service_healthy
+      ai-service:
         condition: service_healthy
     environment:
       KONG_DATABASE: "off"

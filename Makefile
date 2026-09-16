@@ -10,6 +10,7 @@ tidy:
 	cd notification-service && go mod tidy
 	cd media-service && go mod tidy
 	cd game-service && go mod tidy
+	cd ai-service && go mod tidy
 
 up:
 	docker compose up --build -d
@@ -28,3 +29,4 @@ health:
 	@curl -sf http://localhost:8000/post/health && echo post-service
 	@curl -sf http://localhost:8000/friend/health && echo friend-service
 	@curl -sf http://localhost:8000/game/health && echo game-service
+	@curl -sf http://localhost:8000/ai/health && echo ai-service

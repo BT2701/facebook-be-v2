@@ -6,7 +6,7 @@ Frontend: [facebook-fe-v2](https://github.com/BT2701/facebook-fe-v2)
 
 ## Version
 
-**0.3.0** — gateway-only public surface, JWT on writes, Redis notification events, and timeout/retry on friend → user calls.
+**0.4.0** — AI chatbox service (`/ai`) with persisted conversations and an OpenAI-compatible LLM client.
 
 ## Services
 
@@ -19,6 +19,7 @@ Frontend: [facebook-fe-v2](https://github.com/BT2701/facebook-fe-v2)
 | post-service | 8084 | Posts, stories, comments, reactions, search |
 | friend-service | 8085 | Friends, requests, suggestions |
 | game-service | 8086 | Slot config, bets, get-or-create player, server-side winnings |
+| ai-service | 8087 | AI chatbox: one conversation per user, LLM reply |
 | Kong | 8000 | API gateway |
 
 ## Stack
@@ -61,6 +62,7 @@ chat-service/
 notification-service/
 media-service/
 game-service/
+ai-service/
 api-gateway/kong.yml
 ```
 
@@ -76,6 +78,7 @@ Each service follows inbound adapter → application service → outbound reposi
 - Friend request, accept, like, and comment publish Redis events; notification-service persists them.
 - Friend suggestions call user-service with timeout, retry, and an `exclude` list instead of loading every user.
 - Kong rate-limits the public gateway. Admin API binds to `127.0.0.1:8001`.
+- AI chatbox: `GET/POST /ai/chat`, `DELETE /ai/conversations/:id`. Set `AI_API_KEY` (and optional `AI_BASE_URL`, `AI_MODEL`) for a real model. Without a key the service answers from a small local fallback.
 
 ## License
 

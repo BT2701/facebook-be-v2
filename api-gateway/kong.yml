@@ -62,6 +62,13 @@ services:
         paths:
           - /game
 
+  - name: ai-service
+    url: http://ai-service:8087
+    routes:
+      - name: ai-route
+        paths:
+          - /ai
+
 plugins:
   - name: cors
     config:
