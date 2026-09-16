@@ -2,6 +2,7 @@ package inbound
 
 import (
 	"net/http"
+	"strconv"
 	"post-service/internal/model"
 	"post-service/internal/app/service"
 
@@ -106,6 +107,26 @@ func (handler *PostHandler) GetPosts(c echo.Context) error {
 	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
 		"posts": posts,
 	}, nil))
+}
+
+func (handler *PostHandler) SearchPosts(c echo.Context) error {
+	content := c.QueryParam("content")
+	limit, _ := strconv.ParseInt(c.QueryParam("limit"), 10, 64)
+	offset, _ := strconv.ParseInt(c.QueryParam("offset"), 10, 64)
+	posts, err := handler.postService.SearchPosts(content, limit, offset)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+	if posts == nil {
+		posts = []model.Post{}
+	}
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"posts": posts,
+	}, nil))
+}
+
+func (handler *PostHandler) GetPostForNotification(c echo.Context) error {
+	return handler.GetPost(c)
 }
 
 func (handler *PostHandler) DeleteAllPosts(c echo.Context) error {

@@ -21,10 +21,10 @@ logs:
 	docker compose logs -f --tail=100
 
 health:
-	@curl -sf http://localhost:8080/health && echo user-service
-	@curl -sf http://localhost:8081/health && echo notification-service
-	@curl -sf http://localhost:8082/health && echo chat-service
-	@curl -sf http://localhost:8083/health && echo media-service
-	@curl -sf http://localhost:8084/health && echo post-service
-	@curl -sf http://localhost:8085/health && echo friend-service
-	@curl -sf http://localhost:8086/health && echo game-service
+	@curl -sf http://localhost:8000/user/health && echo user-service
+	@curl -sf http://localhost:8000/notification/health && echo notification-service
+	@curl -sf http://localhost:8000/chat/health && echo chat-service
+	@curl -sf http://localhost:8000/media/health && echo media-service
+	@curl -sf http://localhost:8000/post/health && echo post-service
+	@curl -sf http://localhost:8000/friend/health && echo friend-service
+	@curl -sf http://localhost:8000/game/health && echo game-service

@@ -10,24 +10,22 @@ import (
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/golang-jwt/jwt/v5"
 	"os"
 )
-
-var jwtKey = []byte(os.Getenv("JWT_SECRET"))
 
 type UserService interface {
 	Login(ctx context.Context, email, password string) (string, error, *models.User)
 	SignUp(ctx context.Context, user models.User) error
 	ForgotPassword(ctx context.Context, email string) (string, error)
 	ResetPassword(ctx context.Context, token, newPassword string) error
-	GetAllUsers(ctx context.Context) ([]models.User, error)
+	GetAllUsers(ctx context.Context, exclude []string, limit int64) ([]models.User, error)
 	DeleteAllUsers(ctx context.Context) error
 	Logout(ctx context.Context, email string) error
 	EditUser(ctx context.Context, email string, user models.User) error
 	GetByID(ctx context.Context, id string) (*models.User, error)
 	FindUserByEmail(ctx context.Context, email string) (*models.User, error)
 	UpdateAvatar(ctx context.Context, email, avatar string) error
+	SearchUsers(ctx context.Context, name string, limit, offset int64) ([]models.User, error)
 }
 
 type userServiceImpl struct {
@@ -49,26 +47,20 @@ func (s *userServiceImpl) Login(ctx context.Context, email, password string) (st
 	// Kiểm tra token đã tồn tại trong Redis
 	existingToken, err := s.redisClient.Get(ctx, "user:"+email).Result()
 	if err == nil && existingToken != "" {
-		// Giải mã token để kiểm tra thời hạn
-		claims := &utils.Claims{}
-		_, err := jwt.ParseWithClaims(existingToken, claims, func(token *jwt.Token) (interface{}, error) {
-			return jwtKey, nil
-		})
-
-		if err == nil && claims.ExpiresAt.After(time.Now()) {
-			// Nếu token hợp lệ và còn hạn, trả về token cũ
-			return existingToken, nil, user
+		if claims, parseErr := utils.DecodeToken(existingToken); parseErr == nil {
+			if exp, ok := claims["exp"].(float64); ok && time.Unix(int64(exp), 0).After(time.Now()) {
+				user.Sanitize()
+				return existingToken, nil, user
+			}
 		}
 	}
 
-	// Xác thực mật khẩu
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return "", errors.New("invalid credentials"), nil
 	}
 
-	// Tạo token mới
-	token, err := utils.GenerateToken(user.Email)
+	token, err := utils.GenerateToken(user.Email, user.ID)
 	if err != nil {
 		return "", errors.New("failed to generate token"), nil
 	}
@@ -79,6 +71,8 @@ func (s *userServiceImpl) Login(ctx context.Context, email, password string) (st
 		return "", errors.New("failed to save token in Redis"), nil
 	}
 
+	_ = s.repo.SetOnline(ctx, email, 1)
+	user.Sanitize()
 	return token, nil, user
 }
 
@@ -147,8 +141,12 @@ func (s *userServiceImpl) ResetPassword(ctx context.Context, token, newPassword 
 	// Cập nhật mật khẩu trong MongoDB
 	return s.repo.UpdateUserPassword(ctx, email, string(hashedPassword))
 }
-func (s *userServiceImpl) GetAllUsers(ctx context.Context) ([]models.User, error) {
-	return s.repo.FindAllUsers(ctx)
+func (s *userServiceImpl) GetAllUsers(ctx context.Context, exclude []string, limit int64) ([]models.User, error) {
+	users, err := s.repo.FindUsersExcluding(ctx, exclude, limit)
+	if err != nil {
+		return nil, err
+	}
+	return models.SanitizeUsers(users), nil
 }
 
 func (s *userServiceImpl) DeleteAllUsers(ctx context.Context) error {
@@ -168,12 +166,26 @@ func (s *userServiceImpl) GetByID(ctx context.Context, id string) (*models.User,
     if err != nil {
         return nil, err
     }
+	user.Sanitize()
     return user, nil
 }
 func (s *userServiceImpl) FindUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	return s.repo.FindUserByEmail(ctx, email)
+	user, err := s.repo.FindUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	user.Sanitize()
+	return user, nil
 }
 
 func (s *userServiceImpl) UpdateAvatar(ctx context.Context, email, avatar string) error {
 	return s.repo.UpdateAvatar(ctx, email, avatar)
+}
+
+func (s *userServiceImpl) SearchUsers(ctx context.Context, name string, limit, offset int64) ([]models.User, error) {
+	users, err := s.repo.SearchUsers(ctx, name, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	return models.SanitizeUsers(users), nil
 }

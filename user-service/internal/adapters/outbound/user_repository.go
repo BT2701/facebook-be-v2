@@ -2,11 +2,14 @@ package outbound
 
 import (
 	"context"
-	"user-service/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"errors"
 	"fmt"
+	"time"
+	"user-service/internal/models"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserRepository interface {
@@ -16,11 +19,14 @@ type UserRepository interface {
 	InsertUser(ctx context.Context, user models.User) error
 	UpdateUserPassword(ctx context.Context, email, password string) error
 	FindAllUsers(ctx context.Context) ([]models.User, error)
+	FindUsersExcluding(ctx context.Context, exclude []string, limit int64) ([]models.User, error)
 	DeleteAllUsers(ctx context.Context) error
 	Logout(ctx context.Context, email string) error
 	EditUser(ctx context.Context, email string, user models.User) error
     GetUserByID(ctx context.Context, id string) (*models.User, error)
 	UpdateAvatar(ctx context.Context, email, avatar string) error
+	SearchUsers(ctx context.Context, name string, limit, offset int64) ([]models.User, error)
+	SetOnline(ctx context.Context, email string, online int) error
 }
 
 type userRepositoryImpl struct {
@@ -28,7 +34,40 @@ type userRepositoryImpl struct {
 }
 
 func NewUserRepository(collection *mongo.Collection) UserRepository {
-	return &userRepositoryImpl{collection: collection}
+	repo := &userRepositoryImpl{collection: collection}
+	repo.ensureIndexes()
+	return repo
+}
+
+func (r *userRepositoryImpl) ensureIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	_, _ = r.collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "email", Value: 1}}, Options: options.Index().SetUnique(true)},
+		{Keys: bson.D{{Key: "name", Value: 1}}},
+	})
+}
+
+func (r *userRepositoryImpl) FindUsersExcluding(ctx context.Context, exclude []string, limit int64) ([]models.User, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 20
+	}
+	filter := bson.M{}
+	if len(exclude) > 0 {
+		filter["_id"] = bson.M{"$nin": exclude}
+	}
+	opts := options.Find().SetLimit(limit).SetProjection(bson.M{"password": 0})
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var users []models.User
+	if err := cursor.All(ctx, &users); err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func (r *userRepositoryImpl) FindAllUsers(ctx context.Context) ([]models.User, error) {
@@ -119,5 +158,35 @@ func (r *userRepositoryImpl) GetUserByID(ctx context.Context, id string) (*model
 
 func (r *userRepositoryImpl) UpdateAvatar(ctx context.Context, email, avatar string) error {
 	_, err := r.collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"avatar": avatar}})
+	return err
+}
+
+func (r *userRepositoryImpl) SearchUsers(ctx context.Context, name string, limit, offset int64) ([]models.User, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	filter := bson.M{}
+	if name != "" {
+		filter["name"] = bson.M{"$regex": name, "$options": "i"}
+	}
+	opts := options.Find().SetLimit(limit).SetSkip(offset)
+	cursor, err := r.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var users []models.User
+	if err := cursor.All(ctx, &users); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (r *userRepositoryImpl) SetOnline(ctx context.Context, email string, online int) error {
+	_, err := r.collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{
+		"$set":         bson.M{"is_online": online},
+		"$currentDate": bson.M{"last_active": true},
+	})
 	return err
 }

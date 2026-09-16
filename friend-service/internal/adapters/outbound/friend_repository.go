@@ -23,7 +23,14 @@ type friendRepository struct {
 }
 
 func NewFriendRepository(collection *mongo.Collection) FriendRepository {
-	return &friendRepository{collection}
+	repo := &friendRepository{collection}
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	_, _ = collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "userID1", Value: 1}, {Key: "userID2", Value: 1}}},
+		{Keys: bson.D{{Key: "userID2", Value: 1}}},
+	})
+	return repo
 }
 
 func (r *friendRepository) CreateFriend(friend *model.Friend) (*model.Friend, error) {
@@ -37,7 +44,12 @@ func (r *friendRepository) CreateFriend(friend *model.Friend) (*model.Friend, er
 
 func (r *friendRepository) GetFriend(userID1, userID2 string) (*model.Friend, error) {
 	var friend model.Friend
-	err := r.collection.FindOne(context.Background(), bson.M{"userID1": userID1, "userID2": userID2}).Decode(&friend)
+	err := r.collection.FindOne(context.Background(), bson.M{
+		"$or": []bson.M{
+			{"userID1": userID1, "userID2": userID2},
+			{"userID1": userID2, "userID2": userID1},
+		},
+	}).Decode(&friend)
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +85,13 @@ func (r *friendRepository) UpdateFriend(friend *model.Friend) (*model.Friend, er
 }
 
 func (r *friendRepository) DeleteFriend(userID1, userID2 string) error {
-	_, err := r.collection.DeleteOne(context.Background(), bson.M{"userID1": userID1, "userID2": userID2})
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := r.collection.DeleteOne(context.Background(), bson.M{
+		"$or": []bson.M{
+			{"userID1": userID1, "userID2": userID2},
+			{"userID1": userID2, "userID2": userID1},
+		},
+	})
+	return err
 }
 
 func (r *friendRepository) GetFriendsByUserID(userID string) ([]*model.Friend, error) {

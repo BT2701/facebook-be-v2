@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"notification-service/internal/model"
 	"notification-service/pkg/utils"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -125,6 +126,39 @@ func (handler *NotificationHandler) GetNotifications(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
 		"notifications": notifications,
+	}, nil))
+}
+
+func (handler *NotificationHandler) MarkAsRead(c echo.Context) error {
+	id := c.Param("id")
+	if err := handler.notificationService.MarkAsRead(id); err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Notification marked as read",
+	}, nil))
+}
+
+func (handler *NotificationHandler) MarkAllAsRead(c echo.Context) error {
+	receiver := c.Param("userID")
+	if err := handler.notificationService.MarkAllAsRead(receiver); err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "All notifications marked as read",
+	}, nil))
+}
+
+func (handler *NotificationHandler) DeleteByCombo(c echo.Context) error {
+	action, err := strconv.Atoi(c.Param("action"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, utils.NewAPIResponse(http.StatusBadRequest, nil, "Invalid action"))
+	}
+	if err := handler.notificationService.DeleteByCombo(c.Param("user"), c.Param("receiver"), c.Param("post"), action); err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"message": "Notification deleted",
 	}, nil))
 }
 

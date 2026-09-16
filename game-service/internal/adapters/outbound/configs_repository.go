@@ -29,7 +29,13 @@ func (r *configsRepository) GetConfig(gameName string) (models.Common, error) {
 	defer cancel()
 
 	var config models.Common
-	err := r.collection.FindOne(ctx, bson.M{"game_name": gameName}).Decode(&config)
+	if gameName != "" {
+		err := r.collection.FindOne(ctx, bson.M{"game_name": gameName}).Decode(&config)
+		if err == nil {
+			return config, nil
+		}
+	}
+	err := r.collection.FindOne(ctx, bson.M{}).Decode(&config)
 	if err != nil {
 		return models.Common{}, err
 	}

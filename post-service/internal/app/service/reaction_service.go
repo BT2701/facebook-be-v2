@@ -10,6 +10,7 @@ type ReactionService interface {
 	GetReaction(id string) (*model.Reaction, error)
 	UpdateReaction(reaction *model.Reaction) error
 	DeleteReaction(id string) error
+	GetByPostAndUser(postID, userID string) (*model.Reaction, error)
 }
 
 type reactionService struct {
@@ -34,4 +35,8 @@ func (service *reactionService) UpdateReaction(reaction *model.Reaction) error {
 
 func (service *reactionService) DeleteReaction(id string) error {
 	return service.reactionRepository.DeleteReaction(id)
+}
+
+func (service *reactionService) GetByPostAndUser(postID, userID string) (*model.Reaction, error) {
+	return service.reactionRepository.GetByPostAndUser(postID, userID)
 }

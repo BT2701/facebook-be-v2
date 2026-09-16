@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"user-service/internal/app/services"
 	"user-service/internal/models"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -109,12 +112,27 @@ func (ctrl *UserController) ResetPassword(c echo.Context) error {
 }
 
 func (ctrl *UserController) GetAllUsers(c echo.Context) error {
-	users, err := ctrl.service.GetAllUsers(context.Background())
+	exclude := splitCSV(c.QueryParam("exclude"))
+	limit, _ := strconv.ParseInt(c.QueryParam("limit"), 10, 64)
+	users, err := ctrl.service.GetAllUsers(c.Request().Context(), exclude, limit)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
 
 	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, users, nil))
+}
+
+func splitCSV(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	parts := make([]string, 0)
+	for _, item := range strings.Split(raw, ",") {
+		if trimmed := strings.TrimSpace(item); trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	return parts
 }
 
 func (ctrl *UserController) DeleteAllUsers(c echo.Context) error {
@@ -220,4 +238,19 @@ func (ctrl *UserController) UpdateAvatar(c echo.Context) error {
 	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, map[string]interface{}{
 		"message": "Avatar updated",
 	}, nil))
+}
+
+func (ctrl *UserController) SearchUsers(c echo.Context) error {
+	name := c.QueryParam("name")
+	limit, _ := strconv.ParseInt(c.QueryParam("limit"), 10, 64)
+	offset, _ := strconv.ParseInt(c.QueryParam("offset"), 10, 64)
+
+	users, err := ctrl.service.SearchUsers(context.Background(), name, limit, offset)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, newAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+	if users == nil {
+		users = []models.User{}
+	}
+	return c.JSON(http.StatusOK, newAPIResponse(http.StatusOK, users, nil))
 }

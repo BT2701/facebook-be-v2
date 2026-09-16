@@ -10,6 +10,7 @@ type CommentService interface {
 	GetComment(id string) (*model.Comment, error)
 	UpdateComment(comment *model.Comment) error
 	DeleteComment(id string) error
+	GetCommentsByPostID(postID string) ([]model.Comment, error)
 }
 
 type commentService struct {
@@ -34,5 +35,9 @@ func (service *commentService) UpdateComment(comment *model.Comment) error {
 
 func (service *commentService) DeleteComment(id string) error {
 	return service.commentRepository.DeleteComment(id)
+}
+
+func (service *commentService) GetCommentsByPostID(postID string) ([]model.Comment, error) {
+	return service.commentRepository.GetCommentsByPostID(postID)
 }
 

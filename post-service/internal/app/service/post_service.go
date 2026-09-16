@@ -15,6 +15,7 @@ type PostService interface {
 	GetPostsByUserID(userID string) ([]model.Post, error)
 	GetPosts() ([]model.Post, error)
 	DeleteAllPosts() error
+	SearchPosts(content string, limit, offset int64) ([]model.Post, error)
 }
 
 type postService struct {
@@ -68,4 +69,8 @@ func (service *postService) GetPosts() ([]model.Post, error) {
 
 func (service *postService) DeleteAllPosts() error {
 	return service.postRepository.DeleteAllPosts()
+}
+
+func (service *postService) SearchPosts(content string, limit, offset int64) ([]model.Post, error) {
+	return service.postRepository.SearchPosts(content, limit, offset)
 }

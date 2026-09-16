@@ -20,3 +20,16 @@ type User struct {
 	Education    string    `bson:"education" json:"education"`
 	Relationship string    `bson:"relationship" json:"relationship"`
 }
+
+func (u *User) Sanitize() {
+	if u != nil {
+		u.Password = ""
+	}
+}
+
+func SanitizeUsers(users []User) []User {
+	for i := range users {
+		users[i].Sanitize()
+	}
+	return users
+}

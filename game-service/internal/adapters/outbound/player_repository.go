@@ -2,6 +2,7 @@ package outbound
 
 import (
 	"context"
+	"errors"
 	"game-service/internal/models"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 type PlayerRepository interface {
 	CreatePlayer(player *models.Player) (*models.Player, error)
 	GetPlayerByID(id string) (*models.Player, error)
+	GetOrCreateByUserID(userID string, startingBalance float64) (*models.Player, error)
 	GetPlayersByGameID(gameID string) ([]*models.Player, error)
 	UpdatePlayer(player *models.Player) (*models.Player, error)
 	DeletePlayer(id string) error
@@ -44,18 +46,38 @@ func (r *playerRepository) GetPlayerByID(id string) (*models.Player, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-
 	var player models.Player
-	err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&player)
+	if objectID, err := primitive.ObjectIDFromHex(id); err == nil {
+		err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&player)
+		if err == nil {
+			return &player, nil
+		}
+		if err != mongo.ErrNoDocuments {
+			return nil, err
+		}
+	}
+
+	err := r.collection.FindOne(ctx, bson.M{"user_id": id}).Decode(&player)
 	if err != nil {
 		return nil, err
 	}
-
 	return &player, nil
+}
+
+func (r *playerRepository) GetOrCreateByUserID(userID string, startingBalance float64) (*models.Player, error) {
+	player, err := r.GetPlayerByID(userID)
+	if err == nil {
+		return player, nil
+	}
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, err
+	}
+	created := &models.Player{
+		ID:      primitive.NewObjectID(),
+		UserID:  userID,
+		Balance: startingBalance,
+	}
+	return r.CreatePlayer(created)
 }
 
 func (r *playerRepository) GetPlayersByGameID(gameID string) ([]*models.Player, error) {
@@ -117,25 +139,14 @@ func (r *playerRepository) GetAllPlayers() ([]*models.Player, error) {
 }
 
 func (r *playerRepository) UpdateBalance(playerID string, amount float64) (float64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	objectID, err := primitive.ObjectIDFromHex(playerID)
+	player, err := r.GetOrCreateByUserID(playerID, amount)
 	if err != nil {
 		return 0, err
 	}
-
-	var player models.Player
-	err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&player)
-	if err != nil {
-		return 0, err
-	}
-
 	player.Balance = amount
-	_, err = r.collection.ReplaceOne(ctx, bson.M{"_id": player.ID}, player)
+	updated, err := r.UpdatePlayer(player)
 	if err != nil {
 		return 0, err
 	}
-
-	return player.Balance, nil
+	return updated.Balance, nil
 }

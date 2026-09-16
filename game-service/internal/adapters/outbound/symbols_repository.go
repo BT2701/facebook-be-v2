@@ -29,7 +29,13 @@ func (r *symbolsRepository) GetSymbol(gameName string) (models.Common, error) {
 	defer cancel()
 
 	var symbol models.Common
-	err := r.collection.FindOne(ctx, bson.M{"game_name": gameName}).Decode(&symbol)
+	if gameName != "" {
+		err := r.collection.FindOne(ctx, bson.M{"game_name": gameName}).Decode(&symbol)
+		if err == nil {
+			return symbol, nil
+		}
+	}
+	err := r.collection.FindOne(ctx, bson.M{}).Decode(&symbol)
 	if err != nil {
 		return models.Common{}, err
 	}

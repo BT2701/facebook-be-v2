@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RequestRepository interface {
@@ -15,6 +17,8 @@ type RequestRepository interface {
 	GetRequests(receiver string) ([]*model.Request, error)
 	UpdateRequest(request *model.Request) (*model.Request, error)
 	DeleteRequest(sender, receiver string) error
+	DeleteRequestByID(id string) error
+	GetRequestEitherWay(sender, receiver string) (*model.Request, error)
 }
 
 type requestRepository struct {
@@ -22,7 +26,14 @@ type requestRepository struct {
 }
 
 func NewRequestRepository(collection *mongo.Collection) RequestRepository {
-	return &requestRepository{collection}
+	repo := &requestRepository{collection}
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	_, _ = collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "sender", Value: 1}, {Key: "receiver", Value: 1}}, Options: options.Index().SetUnique(true)},
+		{Keys: bson.D{{Key: "receiver", Value: 1}}},
+	})
+	return repo
 }
 
 func (r *requestRepository) CreateRequest(request *model.Request) (*model.Request, error) {
@@ -72,9 +83,34 @@ func (r *requestRepository) UpdateRequest(request *model.Request) (*model.Reques
 }
 
 func (r *requestRepository) DeleteRequest(sender, receiver string) error {
-	_, err := r.collection.DeleteOne(context.Background(), bson.M{"sender": sender, "receiver": receiver})
+	_, err := r.collection.DeleteOne(context.Background(), bson.M{
+		"$or": []bson.M{
+			{"sender": sender, "receiver": receiver},
+			{"sender": receiver, "receiver": sender},
+		},
+	})
+	return err
+}
+
+func (r *requestRepository) DeleteRequestByID(id string) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
-	return nil
+	_, err = r.collection.DeleteOne(context.Background(), bson.M{"_id": objectID})
+	return err
+}
+
+func (r *requestRepository) GetRequestEitherWay(sender, receiver string) (*model.Request, error) {
+	var request model.Request
+	err := r.collection.FindOne(context.Background(), bson.M{
+		"$or": []bson.M{
+			{"sender": sender, "receiver": receiver},
+			{"sender": receiver, "receiver": sender},
+		},
+	}).Decode(&request)
+	if err != nil {
+		return nil, err
+	}
+	return &request, nil
 }

@@ -4,18 +4,21 @@ import (
 	"net/http"
 	"post-service/internal/app/service"
 	"post-service/internal/model"
+	"post-service/pkg/utils"
 
+	"github.com/BT2701/facebook-be-v2/shared/events"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"post-service/pkg/utils"
 )
 
 type CommentHandler struct {
 	commentService service.CommentService
+	postService    service.PostService
+	bus            *events.Bus
 }
 
-func NewCommentHandler(commentService service.CommentService) *CommentHandler {
-	return &CommentHandler{commentService: commentService}
+func NewCommentHandler(commentService service.CommentService, postService service.PostService, bus *events.Bus) *CommentHandler {
+	return &CommentHandler{commentService: commentService, postService: postService, bus: bus}
 }
 
 // CreateComment handles the creation of a new comment
@@ -28,6 +31,7 @@ func (handler *CommentHandler) CreateComment(c echo.Context) error {
 	if err := handler.commentService.CreateComment(&comment); err != nil {
 		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
 	}
+	handler.publishComment(c, &comment)
 	return c.JSON(http.StatusCreated, utils.NewAPIResponse(http.StatusCreated, map[string]interface{}{
 		"message": "Comment created successfully",
 		"comment": comment,
@@ -96,5 +100,36 @@ func (handler *CommentHandler) DeleteComment(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
 		"message": "Comment deleted successfully",
+	}, nil))
+}
+
+func (handler *CommentHandler) publishComment(c echo.Context, comment *model.Comment) {
+	if handler.bus == nil || handler.postService == nil || comment.PostID.IsZero() {
+		return
+	}
+	post, err := handler.postService.GetPost(comment.PostID.Hex())
+	if err != nil || post == nil || post.UserID == "" || post.UserID == comment.UserID {
+		return
+	}
+	handler.bus.PublishCreate(c.Request().Context(), events.NotificationEvent{
+		User:     comment.UserID,
+		Receiver: post.UserID,
+		Post:     comment.PostID.Hex(),
+		Content:  "Commented your post",
+		Action:   2,
+	})
+}
+
+func (handler *CommentHandler) GetCommentsByPostID(c echo.Context) error {
+	postID := c.Param("postID")
+	comments, err := handler.commentService.GetCommentsByPostID(postID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.NewAPIResponse(http.StatusInternalServerError, nil, err.Error()))
+	}
+	if comments == nil {
+		comments = []model.Comment{}
+	}
+	return c.JSON(http.StatusOK, utils.NewAPIResponse(http.StatusOK, map[string]interface{}{
+		"comments": comments,
 	}, nil))
 }

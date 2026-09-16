@@ -29,7 +29,13 @@ func (r *reelsRepository) GetReel(gameName string) (models.Common, error) {
 	defer cancel()
 
 	var reel models.Common
-	err := r.collection.FindOne(ctx, bson.M{"game_name": gameName}).Decode(&reel)
+	if gameName != "" {
+		err := r.collection.FindOne(ctx, bson.M{"game_name": gameName}).Decode(&reel)
+		if err == nil {
+			return reel, nil
+		}
+	}
+	err := r.collection.FindOne(ctx, bson.M{}).Decode(&reel)
 	if err != nil {
 		return models.Common{}, err
 	}

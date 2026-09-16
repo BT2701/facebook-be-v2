@@ -19,15 +19,18 @@ func jwtSecret() []byte {
 }
 
 type Claims struct {
-	Email string `json:"email"`
+	Email  string `json:"email"`
+	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(email string) (string, error) {
-	expirationTime := time.Now().Add(1 * time.Hour)
+func GenerateToken(email, userID string) (string, error) {
+	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		Email: email,
+		Email:  email,
+		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   userID,
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}

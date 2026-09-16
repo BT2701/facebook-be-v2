@@ -13,6 +13,7 @@ type RequestService interface {
 	GetRequests(receiver string) ([]*model.Request, error)
 	UpdateRequest(sender, receiver string, isAccepted bool) (*model.Request, error)
 	DeleteRequest(sender, receiver string) error
+	DeleteRequestByID(id string) error
 }
 
 type requestService struct {
@@ -79,11 +80,10 @@ func (s *requestService) UpdateRequest(sender, receiver string, isAccepted bool)
 
 
 func (s *requestService) DeleteRequest(sender, receiver string) error {
-	err := s.requestRepository.DeleteRequest(sender, receiver)
-	if err != nil {
-		return err
-	}
+	return s.requestRepository.DeleteRequest(sender, receiver)
+}
 
-	return nil
+func (s *requestService) DeleteRequestByID(id string) error {
+	return s.requestRepository.DeleteRequestByID(id)
 }
 

@@ -66,8 +66,9 @@ func SetupRouter() *echo.Echo {
 	reelHandler := inbound.NewReelsHandler(reelsService)
 	configsHandler := inbound.NewConfigsHandler(configsService)
 	featureHandler := inbound.NewFeaturesHandler(featuresService)
+	spinService := service.NewSpinService(paylinesService, symbolsService, configsService)
+	spinHandler := inbound.NewSpinHandler(spinService, reelsService, symbolsService, paylinesService)
 
-	// Set up Echo
 	e := echo.New()
 	e.Use(middleware.Logger())
 	httpx.Apply(e)
@@ -93,10 +94,15 @@ func SetupRouter() *echo.Echo {
 
 	e.GET("/symbols/:game_name", symbolHandler.GetSymbols)
 	e.GET("/paylines/:game_name", paylineHandler.GetPaylines)
-	// e.POST("/calculate_winnings", paylineHandler.CalculateWinnings)
 	e.GET("/reels/:game_name", reelHandler.GetReels)
 	e.GET("/configs/:game_name", configsHandler.GetConfig)
 	e.GET("/features/:game_name", featureHandler.GetFeature)
+
+	e.GET("/reels", spinHandler.GetDefaultReels)
+	e.GET("/symbols", spinHandler.GetDefaultSymbols)
+	e.GET("/paylines", spinHandler.GetDefaultPaylines)
+	e.GET("/bets", spinHandler.GetBets)
+	e.POST("/calculate_winnings", spinHandler.CalculateWinnings)
 
 	// Backup API
 	e.POST("/backup", backupHandler.BackupAll)

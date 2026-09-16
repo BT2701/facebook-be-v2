@@ -29,7 +29,13 @@ func (r *paylinesRepository) GetPayline(gameName string) (models.Common, error) 
 	defer cancel()
 
 	var payline models.Common
-	err := r.collection.FindOne(ctx, bson.M{"game_name": gameName}).Decode(&payline)
+	if gameName != "" {
+		err := r.collection.FindOne(ctx, bson.M{"game_name": gameName}).Decode(&payline)
+		if err == nil {
+			return payline, nil
+		}
+	}
+	err := r.collection.FindOne(ctx, bson.M{}).Decode(&payline)
 	if err != nil {
 		return models.Common{}, err
 	}

@@ -41,7 +41,7 @@ func (handler *PlayerHandler) CreatePlayer(c echo.Context) error {
 func (handler *PlayerHandler) GetPlayerByID(c echo.Context) error {
 	playerID := c.Param("id")
 
-	player, err := handler.playerService.GetPlayerByID(playerID)
+	player, err := handler.playerService.GetOrCreateByUserID(playerID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, utils.NewAPIResponse(http.StatusNotFound, nil, err.Error()))
 	}
